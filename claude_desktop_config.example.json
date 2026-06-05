@@ -7,7 +7,8 @@
       ],
       "env": {
         "JIRA_SERVER_URL": "https://your-enterprise-jira-datacenter.com",
-        "JIRA_PAT": "your_secure_personal_access_token_string_here"
+        "JIRA_PAT": "your_secure_personal_access_token_string_here",
+        "JIRA_MCP_PROFILE": "standard"
       }
     }
   }
