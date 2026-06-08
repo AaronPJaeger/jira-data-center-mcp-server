@@ -120,65 +120,131 @@ This server exposes Jira search, issue inspection, creation, rich updates, workf
 - `bulk_transition_issues`
 - `bulk_add_comment`
 
-## Installation
+## Installation & Setup
+
+### Prerequisites
+
+Before you begin, ensure you have the following installed on your system:
+
+#### 1. Python 3.14 or later
+
+**Windows:**
+```powershell
+winget install Python.Python.3.14
+```
+
+**macOS/Linux:**
+```bash
+brew install python3
+```
+
+**Verify:**
+```powershell
+python --version
+```
+
+#### 2. Git
+
+**Windows:**
+```powershell
+winget install Git.Git
+```
+
+**macOS/Linux:**
+```bash
+brew install git
+```
+
+**Verify:**
+```powershell
+git --version
+```
+
+### Step 1: Clone the Repository
 
 ```bash
 git clone https://github.com/AaronPJaeger/jira-data-center-mcp-server.git
 cd jira-data-center-mcp-server
-
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
 ```
 
-On Windows PowerShell:
+### Step 2: Create a Python Virtual Environment
 
+A virtual environment isolates project dependencies from your system Python installation.
+
+**Windows (PowerShell):**
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
+```
+
+**macOS/Linux:**
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
+You should see `(.venv)` prepended to your terminal prompt, indicating the virtual environment is active.
+
+### Step 3: Install Dependencies
+
+With your virtual environment activated, install the required Python packages:
+
+```bash
 pip install -r requirements.txt
 ```
 
-## Environment
+This installs:
+- `mcp` — Model Context Protocol framework
+- `jira` — Python Jira REST API client
+- `python-dotenv` — Environment variable loading
 
+### Step 4: Configure Environment Variables
+
+Create a `.env` file in the project root:
+
+**Windows (PowerShell):**
+```powershell
+Copy-Item ".env.example" ".env"
+```
+
+**macOS/Linux:**
 ```bash
 cp .env.example .env
 ```
 
-Edit `.env`:
+Edit `.env` with your Jira credentials:
 
 ```dotenv
 JIRA_SERVER_URL=https://your-enterprise-jira-datacenter.com
-JIRA_PAT=your_secure_personal_access_token_string_here
+JIRA_PAT=your_personal_access_token_here
 LOG_LEVEL=INFO
+JIRA_MCP_PROFILE=standard
 ```
 
-Do not commit `.env` or Jira PAT values.
+**Getting Your Jira PAT (Personal Access Token):**
+1. Log in to your Jira Data Center instance
+2. Navigate to **Profile > Personal Access Tokens** (or your admin dashboard)
+3. Click **Create Token**
+4. Name it "MCP Server" and copy the token value
+5. **Do not commit `.env` to version control** — add it to `.gitignore` if not already present
 
-## Smoke Test
+### Step 5: Verify the Installation
 
-```bash
-npx @modelcontextprotocol/inspector python /absolute/path/to/jira-data-center-mcp-server/jira_server.py
+Test that the server is properly configured:
+
+**Windows (PowerShell):**
+```powershell
+python jira_server.py
 ```
 
-## Claude Desktop Example
-
-```json
-{
-  "mcpServers": {
-    "jira-datacenter-v10-service": {
-      "command": "python",
-      "args": [
-        "/absolute/secure/path/to/jira-data-center-mcp-server/jira_server.py"
-      ],
-      "env": {
-        "JIRA_SERVER_URL": "https://your-enterprise-jira-datacenter.com",
-        "JIRA_PAT": "your_secure_personal_access_token_string_here"
-      }
-    }
-  }
-}
+You should see logging output like:
 ```
+[INFO] Jira Data Center MCP Server initialized
+[INFO] Profile: standard
+[INFO] Enabled groups: READONLY_CORE, METADATA, ...
+```
+
+Press `Ctrl+C` to stop the server.
 
 ## v4.1 Addition
 
@@ -187,7 +253,7 @@ npx @modelcontextprotocol/inspector python /absolute/path/to/jira-data-center-mc
 
 ## Version 5: Profile-Based Tool Sets
 
-The server now supports grouped tool exposure through profiles. This keeps Copilot/agents focused and lets you avoid exposing destructive or bulk tools during normal work.
+The server now supports grouped tool exposure through profiles. This lets you avoid exposing destructive or bulk tools during normal work.
 
 Set one profile:
 
@@ -236,9 +302,41 @@ DESTRUCTIVE
 
 The `get_mcp_profile_status` tool is exposed through the `METADATA` group and reports the active profile and enabled groups.
 
-### VS Code/Copilot profile example
+## Troubleshooting
 
-Use `vscode_mcp_profiles.example.json` as a template for multiple local MCP server entries, all pointing to the same `jira_server.py` but with different `JIRA_MCP_PROFILE` values.
+### Virtual Environment Issues
+
+**Problem:** `command not found: python` or `.venv not activated`
+
+**Solution:**
+- Verify Python is installed: `python --version`
+- Reactivate the virtual environment:
+  - Windows: `.\.venv\Scripts\Activate.ps1`
+  - macOS/Linux: `source .venv/bin/activate`
+
+### Jira Connection Errors
+
+**Problem:** `JIRAError: (401) Unauthorized`
+
+**Solution:**
+- Verify `JIRA_SERVER_URL` is correct (no trailing slashes)
+- Verify `JIRA_PAT` token is valid and has not expired
+- Confirm the token has permissions for your Jira instance
+
+**Problem:** `JIRAError: (404) Not Found`
+
+**Solution:**
+- Double-check the Jira server URL
+- Verify you have network access to the Jira instance
+
+### .env File Not Loading
+
+**Problem:** Server starts but ignores `.env` values
+
+**Solution:**
+- Confirm `.env` exists in the project root directory
+- Check file encoding is UTF-8 (not UTF-16 or other)
+- Restart the server after editing `.env`
 
 ## Safety and Operational Notes
 
