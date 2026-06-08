@@ -479,6 +479,51 @@ def get_issue_details(issue_key: str) -> str:
 
 
 @profiled_tool("READONLY_CORE")
+def get_issue_all_fields(issue_key: str, fields: Optional[str] = None) -> str:
+    """
+    Return the full raw JSON payload for an issue, including all custom fields.
+
+    Use this to inspect custom field values (epic link, collaborators, estimates,
+    start/target dates, story points, etc.) that get_issue_details does not surface.
+
+    Args:
+        issue_key: Jira issue key (e.g. PROJ-123).
+        fields: Optional comma-separated list of field ids to return
+                (e.g. "customfield_10001,customfield_22701,customfield_11712").
+                If omitted, all fields are returned.
+    """
+    err = _validate_issue_key(issue_key)
+    if err:
+        return f"Error: {err}"
+    normalized_key = _normalize_issue_key(issue_key)
+    try:
+        params: Dict[str, Any] = {}
+        if fields:
+            params["fields"] = fields.strip()
+        data = _get(f"/rest/api/2/issue/{normalized_key}", params=params if params else None)
+        return _json_dumps(data)
+    except Exception as exc:
+        return _error(f"Unable to fetch full fields for {normalized_key}", exc)
+
+
+@profiled_tool("READONLY_CORE")
+def get_issue_editmeta(issue_key: str) -> str:
+    """
+    Return the edit metadata for an issue — which fields are editable and their
+    allowed values/schemas. Use before updating custom fields to confirm they
+    are settable and to discover accepted value formats.
+    """
+    err = _validate_issue_key(issue_key)
+    if err:
+        return f"Error: {err}"
+    normalized_key = _normalize_issue_key(issue_key)
+    try:
+        return _json_dumps(_get(f"/rest/api/2/issue/{normalized_key}/editmeta"))
+    except Exception as exc:
+        return _error(f"Unable to fetch edit metadata for {normalized_key}", exc)
+
+
+@profiled_tool("READONLY_CORE")
 def validate_jql(jql_query: str, max_results: int = 1) -> str:
     """
     Validate a JQL query by executing a tiny bounded search.
