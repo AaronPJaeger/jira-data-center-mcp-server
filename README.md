@@ -208,6 +208,27 @@ JIRA_MCP_PROFILE=standard
 | `JIRA_MCP_PROFILE` | Active tool profile | `standard` |
 | `JIRA_MCP_ENABLED_GROUPS` | Override profile with explicit groups (comma-separated) | (none) |
 
+#### Profiles
+
+Profiles control which tools the server exposes to MCP clients. Use `standard` if you're unsure — it covers normal day-to-day Jira work without exposing destructive or bulk operations.
+
+| Profile | Purpose |
+| :--- | :--- |
+| `readonly` | Discovery, triage, reporting, metadata, issue history, Agile read-only. Safe for dashboards and bots. |
+| `standard` | **Recommended default.** Normal issue work — create, update, transition, comment, link, attach — without destructive or bulk tools. |
+| `agile` | Sprint and backlog planning. Adds board/sprint write operations. |
+| `admin` | Metadata, roles, groups, permissions, and security context. Read-heavy admin tasks. |
+| `full` | All non-destructive, non-bulk tools. |
+| `dangerous` | All tools, including delete and bulk operations. Destructive tools still require `confirm=True`. |
+
+You can also bypass profiles and enable exact tool groups:
+
+```dotenv
+JIRA_MCP_ENABLED_GROUPS=READONLY_CORE,METADATA,WORKFLOW_READ,AGILE_READ
+```
+
+The `get_mcp_profile_status` tool reports the active profile and enabled groups at runtime.
+
 **Getting Your Jira PAT (Personal Access Token):**
 1. Log in to your Jira Data Center instance
 2. Navigate to **Profile > Personal Access Tokens** (or your admin dashboard)
@@ -259,62 +280,6 @@ python -m jira_data_center_mcp_server
 ```
 
 </details>
-
-## v4.1 Addition
-
-- `get_custom_field_options(field_id, context_id=None)` for retrieving allowed custom field options where exposed by the Jira Data Center REST surface.
-
-
-## Version 5: Profile-Based Tool Sets
-
-The server now supports grouped tool exposure through profiles. This lets you avoid exposing destructive or bulk tools during normal work.
-
-Set one profile:
-
-```dotenv
-JIRA_MCP_PROFILE=standard
-```
-
-Supported profiles:
-
-| Profile | Purpose |
-| :--- | :--- |
-| `readonly` | Discovery, triage, reporting, metadata, comments read, issue history, Agile read-only. |
-| `standard` | Default. Normal day-to-day issue work without destructive/bulk tools. |
-| `agile` | Sprint/backlog planning profile. |
-| `admin` | Metadata, roles, groups, permissions, and security context. |
-| `full` | All non-destructive, non-bulk tools. |
-| `dangerous` | All tools, including destructive and bulk tools. Destructive tools still require `confirm=True`. |
-
-You can also bypass profiles and enable exact groups:
-
-```dotenv
-JIRA_MCP_ENABLED_GROUPS=READONLY_CORE,METADATA,WORKFLOW_READ,AGILE_READ
-```
-
-Available groups:
-
-```text
-READONLY_CORE
-METADATA
-WORKFLOW_READ
-WORKFLOW_WRITE
-ISSUE_WRITE
-COMMENT_WRITE
-ASSIGNMENT_WRITE
-LINK_WRITE
-PROPERTY_WRITE
-ATTACHMENT_WRITE
-WORKLOG_WRITE
-AGILE_READ
-AGILE_WRITE
-ADMIN_READ
-ADMIN_WRITE
-BULK
-DESTRUCTIVE
-```
-
-The `get_mcp_profile_status` tool is exposed through the `METADATA` group and reports the active profile and enabled groups.
 
 ## Troubleshooting
 
