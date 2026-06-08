@@ -4,122 +4,6 @@ Enterprise-grade Model Context Protocol (MCP) server for Jira Data Center v10.
 
 This server exposes Jira search, issue inspection, creation, rich updates, workflow transitions, comments, identity lookup, schema discovery, issue links, attachments, worklogs, Jira Software Agile operations, audit/history, saved filters, issue properties, project roles, groups, security levels, and guarded destructive operations to MCP-compatible clients.
 
-## Tool Coverage
-
-### Search and inspection
-
-- `search_issues`
-- `get_issue_details`
-- `validate_jql`
-- `get_issue_changelog`
-- `get_issue_activity`
-
-### Project/schema metadata
-
-- `list_projects`
-- `get_project_metadata`
-- `get_create_issue_metadata`
-- `list_issue_types`
-- `list_priorities`
-- `list_fields`
-- `get_custom_field_options`
-- `list_components`
-- `list_versions`
-
-### Issue lifecycle and mutation
-
-- `create_issue`
-- `create_subtask`
-- `list_subtasks`
-- `update_issue`
-- `update_issue_structured`
-- `update_issue_fields`
-- `delete_issue`
-
-### Workflow
-
-- `get_available_transitions`
-- `transition_issue`
-- `transition_issue_with_fields`
-- `list_statuses`
-- `list_resolutions`
-- `list_workflows`
-
-### Comments and collaboration
-
-- `add_comment`
-- `list_comments`
-- `update_comment`
-- `delete_comment`
-- `assign_issue`
-- `unassign_issue`
-- `list_watchers`
-- `watch_issue`
-- `unwatch_issue`
-- `search_users`
-
-### Permissions and server context
-
-- `get_myself`
-- `get_my_permissions`
-- `get_server_info`
-
-### Links, remote links, and issue properties
-
-- `list_issue_links`
-- `list_issue_link_types`
-- `create_issue_link`
-- `delete_issue_link`
-- `list_remote_links`
-- `add_remote_link`
-- `delete_remote_link`
-- `list_issue_properties`
-- `get_issue_property`
-- `set_issue_property`
-- `delete_issue_property`
-
-### Attachments
-
-- `list_attachments`
-- `add_attachment`
-- `download_attachment`
-- `delete_attachment`
-
-### Worklogs
-
-- `list_worklogs`
-- `add_worklog`
-- `update_worklog`
-- `delete_worklog`
-
-### Jira Software Agile
-
-- `list_boards`
-- `get_board_configuration`
-- `list_sprints`
-- `get_sprint`
-- `list_sprint_issues`
-- `move_issues_to_sprint`
-- `move_issues_to_backlog`
-- `rank_issue`
-
-### Filters, roles, groups, security
-
-- `list_filters`
-- `get_filter`
-- `run_filter`
-- `list_project_roles`
-- `get_project_role_actors`
-- `list_groups`
-- `list_security_levels`
-- `set_issue_security_level`
-
-### Conservative bulk operations
-
-- `bulk_update_issues`
-- `bulk_transition_issues`
-- `bulk_add_comment`
-
 ## Installation
 
 ### Quick Install with `uv` (Recommended)
@@ -280,6 +164,122 @@ python -m jira_data_center_mcp_server
 ```
 
 </details>
+
+## Tool Coverage
+
+### Search and inspection
+
+- `search_issues`
+- `get_issue_details`
+- `validate_jql`
+- `get_issue_changelog`
+- `get_issue_activity`
+
+### Project/schema metadata
+
+- `list_projects`
+- `get_project_metadata`
+- `get_create_issue_metadata`
+- `list_issue_types`
+- `list_priorities`
+- `list_fields`
+- `get_custom_field_options`
+- `list_components`
+- `list_versions`
+
+### Issue lifecycle and mutation
+
+- `create_issue`
+- `create_subtask`
+- `list_subtasks`
+- `update_issue`
+- `update_issue_structured`
+- `update_issue_fields`
+- `delete_issue`
+
+### Workflow
+
+- `get_available_transitions`
+- `transition_issue`
+- `transition_issue_with_fields`
+- `list_statuses`
+- `list_resolutions`
+- `list_workflows`
+
+### Comments and collaboration
+
+- `add_comment`
+- `list_comments`
+- `update_comment`
+- `delete_comment`
+- `assign_issue`
+- `unassign_issue`
+- `list_watchers`
+- `watch_issue`
+- `unwatch_issue`
+- `search_users`
+
+### Permissions and server context
+
+- `get_myself`
+- `get_my_permissions`
+- `get_server_info`
+
+### Links, remote links, and issue properties
+
+- `list_issue_links`
+- `list_issue_link_types`
+- `create_issue_link`
+- `delete_issue_link`
+- `list_remote_links`
+- `add_remote_link`
+- `delete_remote_link`
+- `list_issue_properties`
+- `get_issue_property`
+- `set_issue_property`
+- `delete_issue_property`
+
+### Attachments
+
+- `list_attachments`
+- `add_attachment`
+- `download_attachment`
+- `delete_attachment`
+
+### Worklogs
+
+- `list_worklogs`
+- `add_worklog`
+- `update_worklog`
+- `delete_worklog`
+
+### Jira Software Agile
+
+- `list_boards`
+- `get_board_configuration`
+- `list_sprints`
+- `get_sprint`
+- `list_sprint_issues`
+- `move_issues_to_sprint`
+- `move_issues_to_backlog`
+- `rank_issue`
+
+### Filters, roles, groups, security
+
+- `list_filters`
+- `get_filter`
+- `run_filter`
+- `list_project_roles`
+- `get_project_role_actors`
+- `list_groups`
+- `list_security_levels`
+- `set_issue_security_level`
+
+### Conservative bulk operations
+
+- `bulk_update_issues`
+- `bulk_transition_issues`
+- `bulk_add_comment`
 
 ## Troubleshooting
 
