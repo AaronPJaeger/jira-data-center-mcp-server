@@ -21,8 +21,7 @@ load_dotenv()
 
 mcp = FastMCP(
     "Jira-Data-Center-v10",
-    version="1.4.0",
-    description=(
+    instructions=(
         "Enterprise-grade profile-aware MCP server exposing read, write, query, agile, metadata, "
         "audit, collaboration, workflow, and administration-safe Jira Data Center v10 operations."
     ),
@@ -299,12 +298,12 @@ def _post(path: str, payload: Optional[Dict[str, Any]] = None, params: Optional[
         kwargs["files"] = files
         kwargs["headers"] = {"X-Atlassian-Token": "no-check"}
     else:
-        kwargs["json"] = payload or {}
+        kwargs["json"] = {} if payload is None else payload
     return _request("POST", path, **kwargs)
 
 
 def _put(path: str, payload: Optional[Dict[str, Any]] = None) -> Any:
-    return _request("PUT", path, json=payload or {})
+    return _request("PUT", path, json={} if payload is None else payload)
 
 
 def _delete(path: str, params: Optional[Dict[str, Any]] = None) -> Any:
@@ -487,7 +486,7 @@ def validate_jql(jql_query: str, max_results: int = 1) -> str:
     if not jql_query or not jql_query.strip():
         return "Error: jql_query is required."
     try:
-        jira_client.search_issues(jql_query, maxResults=max(0, min(int(max_results), 5)))
+        jira_client.search_issues(jql_query, maxResults=max(1, min(int(max_results), 5)))
         return _json_dumps({"valid": True, "jql_query": jql_query})
     except Exception as exc:
         return _json_dumps({"valid": False, "jql_query": jql_query, "error": _error("JQL validation failed", exc)})
@@ -555,7 +554,11 @@ def list_issue_types(project_key: Optional[str] = None) -> str:
     """List issue types, optionally scoped through project create metadata."""
     try:
         if project_key:
-            metadata = json.loads(get_create_issue_metadata(project_key=project_key))
+            raw = get_create_issue_metadata(project_key=project_key)
+            try:
+                metadata = json.loads(raw)
+            except (json.JSONDecodeError, TypeError):
+                return raw  # propagate upstream error as-is
             issue_types = []
             for project in metadata.get("projects", []):
                 issue_types.extend(project.get("issuetypes", []))
@@ -1125,7 +1128,8 @@ def watch_issue(issue_key: str, username: Optional[str] = None) -> str:
         return f"Error: {err}"
     try:
         if username:
-            _post(f"/rest/api/2/issue/{_normalize_issue_key(issue_key)}/watchers", payload=username)
+            # Jira watcher API expects a raw JSON string body, not a JSON object.
+            _request("POST", f"/rest/api/2/issue/{_normalize_issue_key(issue_key)}/watchers", json=username)
         else:
             jira_client.add_watcher(_normalize_issue_key(issue_key), jira_client.current_user())
         return f"Success: watcher added for {_normalize_issue_key(issue_key)}."
@@ -1405,7 +1409,10 @@ def set_issue_property(issue_key: str, property_key: str, value_json: str) -> st
     if err:
         return f"Error: {err}"
     try:
-        value = json.loads(value_json)
+        try:
+            value = json.loads(value_json)
+        except (json.JSONDecodeError, TypeError) as parse_err:
+            return f"Error: value_json must be valid JSON. {parse_err}"
         _put(f"/rest/api/2/issue/{_normalize_issue_key(issue_key)}/properties/{property_key}", value)
         return f"Success: Issue property {property_key} set on {_normalize_issue_key(issue_key)}."
     except Exception as exc:
@@ -1445,15 +1452,23 @@ def list_attachments(issue_key: str) -> str:
         return _error(f"Unable to list attachments for {issue_key}", exc)
 
 
+_SENSITIVE_FILE_NAMES = {".env", ".env.local", ".env.production", ".env.development", ".env.staging"}
+_SENSITIVE_DIR_NAMES = {".ssh", ".gnupg", ".aws", ".azure"}
+
+
 @profiled_tool("ATTACHMENT_WRITE")
 def add_attachment(issue_key: str, file_path: str) -> str:
     """Attach a local file path to an issue."""
     err = _validate_issue_key(issue_key)
     if err:
         return f"Error: {err}"
-    path = Path(file_path)
+    path = Path(file_path).resolve()
     if not path.exists() or not path.is_file():
         return f"Error: file_path does not exist or is not a file: {file_path}"
+    if path.name.lower() in _SENSITIVE_FILE_NAMES or path.name.lower().startswith(".env."):
+        return f"Error: Refusing to attach potentially sensitive file: {path.name}"
+    if any(part.lower() in _SENSITIVE_DIR_NAMES for part in path.parts):
+        return f"Error: Refusing to attach file from sensitive directory: {file_path}"
     try:
         attachment = jira_client.add_attachment(issue=_normalize_issue_key(issue_key), attachment=str(path))
         return _json_dumps(_object_to_dict(attachment))
@@ -1461,15 +1476,18 @@ def add_attachment(issue_key: str, file_path: str) -> str:
         return _error(f"Unable to add attachment to {issue_key}", exc)
 
 
-@profiled_tool("ATTACHMENT_WRITE")
+@profiled_tool("READONLY_CORE")
 def download_attachment(attachment_id: str, output_path: str) -> str:
     """Download an attachment by id to a local output path."""
     if not attachment_id or not output_path:
         return "Error: attachment_id and output_path are required."
     try:
+        output = Path(output_path).resolve()
+        cwd = Path.cwd().resolve()
+        if not output.is_relative_to(cwd):
+            return f"Error: output_path must be within the current working directory: {cwd}"
         attachment = jira_client.attachment(attachment_id)
         data = attachment.get()
-        output = Path(output_path)
         output.parent.mkdir(parents=True, exist_ok=True)
         output.write_bytes(data)
         return f"Success: Attachment {attachment_id} written to {output}."
