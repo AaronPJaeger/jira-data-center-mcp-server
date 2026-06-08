@@ -127,13 +127,19 @@ This server exposes Jira search, issue inspection, creation, rich updates, workf
 The fastest way to install and run the server is with [`uv`](https://docs.astral.sh/uv/):
 
 ```bash
-uv tool install jira-data-center-mcp-server
+uv tool install git+https://github.com/AaronPJaeger/jira-data-center-mcp-server.git
 ```
 
 Or run directly without installing:
 
 ```bash
-uvx jira-data-center-mcp-server
+uvx --from git+https://github.com/AaronPJaeger/jira-data-center-mcp-server.git jira-data-center-mcp-server
+```
+
+To install a specific release:
+
+```bash
+uv tool install git+https://github.com/AaronPJaeger/jira-data-center-mcp-server.git@v0.1.0
 ```
 
 For development, clone the repository and install in editable mode:
@@ -159,7 +165,7 @@ Add the server to your MCP client configuration (e.g. Claude Desktop, VS Code):
   "mcpServers": {
     "jira": {
       "command": "uvx",
-      "args": ["jira-data-center-mcp-server"],
+      "args": ["--from", "git+https://github.com/AaronPJaeger/jira-data-center-mcp-server.git", "jira-data-center-mcp-server"],
       "env": {
         "JIRA_SERVER_URL": "https://your-jira-instance.com",
         "JIRA_PAT": "your_personal_access_token",
