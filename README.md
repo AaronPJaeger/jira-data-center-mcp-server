@@ -120,56 +120,100 @@ This server exposes Jira search, issue inspection, creation, rich updates, workf
 - `bulk_transition_issues`
 - `bulk_add_comment`
 
-## Installation & Setup
+## Installation
 
-### Prerequisites
+### Quick Install with `uv` (Recommended)
 
-Before you begin, ensure you have the following installed on your system:
+The fastest way to install and run the server is with [`uv`](https://docs.astral.sh/uv/):
 
-#### 1. Python 3.14 or later
-
-**Windows:**
-```powershell
-winget install Python.Python.3.14
-```
-
-**macOS/Linux:**
 ```bash
-brew install python3
+uv tool install jira-data-center-mcp-server
 ```
 
-**Verify:**
-```powershell
-python --version
-```
+Or run directly without installing:
 
-#### 2. Git
-
-**Windows:**
-```powershell
-winget install Git.Git
-```
-
-**macOS/Linux:**
 ```bash
-brew install git
+uvx jira-data-center-mcp-server
 ```
 
-**Verify:**
-```powershell
-git --version
+For development, clone the repository and install in editable mode:
+
+```bash
+git clone https://github.com/AaronPJaeger/jira-data-center-mcp-server.git
+cd jira-data-center-mcp-server
+uv pip install -e .
 ```
 
-### Step 1: Clone the Repository
+You can also run the package as a module:
+
+```bash
+python -m jira_data_center_mcp_server
+```
+
+### MCP Client Configuration
+
+Add the server to your MCP client configuration (e.g. Claude Desktop, VS Code):
+
+```json
+{
+  "mcpServers": {
+    "jira": {
+      "command": "uvx",
+      "args": ["jira-data-center-mcp-server"],
+      "env": {
+        "JIRA_SERVER_URL": "https://your-jira-instance.com",
+        "JIRA_PAT": "your_personal_access_token",
+        "JIRA_MCP_PROFILE": "standard"
+      }
+    }
+  }
+}
+```
+
+### Configuration
+
+The server is configured via environment variables. Create a `.env` file in your working directory or pass them directly:
+
+```dotenv
+JIRA_SERVER_URL=https://your-enterprise-jira-datacenter.com
+JIRA_PAT=your_personal_access_token_here
+LOG_LEVEL=INFO
+JIRA_MCP_PROFILE=standard
+```
+
+| Variable | Purpose | Default |
+|----------|---------|---------|
+| `JIRA_SERVER_URL` | Jira Data Center base URL | (required) |
+| `JIRA_PAT` | Personal Access Token | (required) |
+| `LOG_LEVEL` | Logging verbosity | `INFO` |
+| `JIRA_MCP_PROFILE` | Active tool profile | `standard` |
+| `JIRA_MCP_ENABLED_GROUPS` | Override profile with explicit groups (comma-separated) | (none) |
+
+**Getting Your Jira PAT (Personal Access Token):**
+1. Log in to your Jira Data Center instance
+2. Navigate to **Profile > Personal Access Tokens** (or your admin dashboard)
+3. Click **Create Token**
+4. Name it "MCP Server" and copy the token value
+5. **Do not commit `.env` to version control** — add it to `.gitignore` if not already present
+
+### Manual Installation (without `uv`)
+
+<details>
+<summary>Click to expand manual setup steps</summary>
+
+#### Prerequisites
+
+- Python 3.10 or later
+- Git
+
+#### Step 1: Clone the Repository
 
 ```bash
 git clone https://github.com/AaronPJaeger/jira-data-center-mcp-server.git
 cd jira-data-center-mcp-server
 ```
 
-### Step 2: Create a Python Virtual Environment
-
-A virtual environment isolates project dependencies from your system Python installation.
+#### Step 2: Create a Python Virtual Environment
 
 **Windows (PowerShell):**
 ```powershell
@@ -183,68 +227,19 @@ python3 -m venv .venv
 source .venv/bin/activate
 ```
 
-You should see `(.venv)` prepended to your terminal prompt, indicating the virtual environment is active.
-
-### Step 3: Install Dependencies
-
-With your virtual environment activated, install the required Python packages:
+#### Step 3: Install Dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-This installs:
-- `mcp` — Model Context Protocol framework
-- `jira` — Python Jira REST API client
-- `python-dotenv` — Environment variable loading
+#### Step 4: Run the Server
 
-### Step 4: Configure Environment Variables
-
-Create a `.env` file in the project root:
-
-**Windows (PowerShell):**
-```powershell
-Copy-Item ".env.example" ".env"
-```
-
-**macOS/Linux:**
 ```bash
-cp .env.example .env
+python -m jira_data_center_mcp_server
 ```
 
-Edit `.env` with your Jira credentials:
-
-```dotenv
-JIRA_SERVER_URL=https://your-enterprise-jira-datacenter.com
-JIRA_PAT=your_personal_access_token_here
-LOG_LEVEL=INFO
-JIRA_MCP_PROFILE=standard
-```
-
-**Getting Your Jira PAT (Personal Access Token):**
-1. Log in to your Jira Data Center instance
-2. Navigate to **Profile > Personal Access Tokens** (or your admin dashboard)
-3. Click **Create Token**
-4. Name it "MCP Server" and copy the token value
-5. **Do not commit `.env` to version control** — add it to `.gitignore` if not already present
-
-### Step 5: Verify the Installation
-
-Test that the server is properly configured:
-
-**Windows (PowerShell):**
-```powershell
-python jira_server.py
-```
-
-You should see logging output like:
-```
-[INFO] Jira Data Center MCP Server initialized
-[INFO] Profile: standard
-[INFO] Enabled groups: READONLY_CORE, METADATA, ...
-```
-
-Press `Ctrl+C` to stop the server.
+</details>
 
 ## v4.1 Addition
 
