@@ -36,7 +36,7 @@ uv pip install -e .
 
 ### MCP Client Configuration
 
-After installing, add the server to your MCP client configuration.
+After installing, add the server to your MCP client configuration. Use the full path to the executable — find it with `uv tool dir --bin` (typically `~/.local/bin` on Linux/macOS or `%USERPROFILE%\.local\bin` on Windows).
 
 **VS Code** (`settings.json` or user-level `mcp.json`):
 
@@ -45,7 +45,7 @@ After installing, add the server to your MCP client configuration.
   "servers": {
     "jira": {
       "type": "stdio",
-      "command": "jira-data-center-mcp-server",
+      "command": "/full/path/to/jira-data-center-mcp-server",
       "env": {
         "JIRA_SERVER_URL": "https://your-jira-instance.com",
         "JIRA_PAT": "your_personal_access_token",
@@ -62,7 +62,7 @@ After installing, add the server to your MCP client configuration.
 {
   "mcpServers": {
     "jira": {
-      "command": "jira-data-center-mcp-server",
+      "command": "/full/path/to/jira-data-center-mcp-server",
       "env": {
         "JIRA_SERVER_URL": "https://your-jira-instance.com",
         "JIRA_PAT": "your_personal_access_token",
@@ -72,6 +72,8 @@ After installing, add the server to your MCP client configuration.
   }
 }
 ```
+
+> **Tip:** If `~/.local/bin` is on your PATH (run `uv tool update-shell` to add it), you can use just `"jira-data-center-mcp-server"` instead of the full path.
 
 ### Configuration
 
