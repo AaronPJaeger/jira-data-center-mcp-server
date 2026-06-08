@@ -26,12 +26,20 @@ This installs `jira-data-center-mcp-server` as a standalone executable with all 
 uv tool upgrade jira-data-center-mcp-server
 ```
 
-For development, clone the repository and install in editable mode:
+For development, clone the repository and install locally:
 
 ```bash
 git clone https://github.com/AaronPJaeger/jira-data-center-mcp-server.git
 cd jira-data-center-mcp-server
-uv pip install -e .
+uv sync                      # install dependencies into local .venv
+uv tool install --force .    # rebuild the global executable used by MCP clients
+```
+
+After making code changes, rebuild and restart the MCP server:
+
+```bash
+uv tool install --force .
+# Then restart the MCP server from your MCP client (e.g. VS Code MCP panel)
 ```
 
 ### MCP Client Configuration

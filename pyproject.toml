@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "jira-data-center-mcp-server"
-version = "0.1.0"
+version = "0.2.0"
 description = "Enterprise-grade MCP server for Jira Data Center v10"
 readme = "README.md"
 license = "MIT"
