@@ -124,22 +124,22 @@ This server exposes Jira search, issue inspection, creation, rich updates, workf
 
 ### Quick Install with `uv` (Recommended)
 
-The fastest way to install and run the server is with [`uv`](https://docs.astral.sh/uv/):
+Install the server with [`uv`](https://docs.astral.sh/uv/):
 
 ```bash
 uv tool install git+https://github.com/AaronPJaeger/jira-data-center-mcp-server.git
-```
-
-Or run directly without installing:
-
-```bash
-uvx --from git+https://github.com/AaronPJaeger/jira-data-center-mcp-server.git jira-data-center-mcp-server
 ```
 
 To install a specific release:
 
 ```bash
 uv tool install git+https://github.com/AaronPJaeger/jira-data-center-mcp-server.git@v0.1.0
+```
+
+This installs `jira-data-center-mcp-server` as a standalone executable with all dependencies pre-resolved. To upgrade later:
+
+```bash
+uv tool upgrade jira-data-center-mcp-server
 ```
 
 For development, clone the repository and install in editable mode:
@@ -150,22 +150,35 @@ cd jira-data-center-mcp-server
 uv pip install -e .
 ```
 
-You can also run the package as a module:
-
-```bash
-python -m jira_data_center_mcp_server
-```
-
 ### MCP Client Configuration
 
-Add the server to your MCP client configuration (e.g. Claude Desktop, VS Code):
+After installing, add the server to your MCP client configuration.
+
+**VS Code** (`settings.json` or user-level `mcp.json`):
+
+```json
+{
+  "servers": {
+    "jira": {
+      "type": "stdio",
+      "command": "jira-data-center-mcp-server",
+      "env": {
+        "JIRA_SERVER_URL": "https://your-jira-instance.com",
+        "JIRA_PAT": "your_personal_access_token",
+        "JIRA_MCP_PROFILE": "standard"
+      }
+    }
+  }
+}
+```
+
+**Claude Desktop** (`claude_desktop_config.json`):
 
 ```json
 {
   "mcpServers": {
     "jira": {
-      "command": "uvx",
-      "args": ["--from", "git+https://github.com/AaronPJaeger/jira-data-center-mcp-server.git", "jira-data-center-mcp-server"],
+      "command": "jira-data-center-mcp-server",
       "env": {
         "JIRA_SERVER_URL": "https://your-jira-instance.com",
         "JIRA_PAT": "your_personal_access_token",
