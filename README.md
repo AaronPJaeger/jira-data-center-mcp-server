@@ -11,13 +11,13 @@ Exposes consolidated tools for issue management, workflow transitions, and agile
 Install the server with [`uv`](https://docs.astral.sh/uv/):
 
 ```bash
-uv tool install git+https://github.com/AaronPJaeger/jira-data-center-mcp-server.git
+uv tool install git+https://<your-github-host>/<org>/jira-data-center-mcp-server.git
 ```
 
 To install a specific release:
 
 ```bash
-uv tool install git+https://github.com/AaronPJaeger/jira-data-center-mcp-server.git@v0.1.0
+uv tool install git+https://<your-github-host>/<org>/jira-data-center-mcp-server.git@v0.1.0
 ```
 
 This installs `jira-data-center-mcp-server` as a standalone executable with all dependencies pre-resolved. To upgrade later:
@@ -29,7 +29,7 @@ uv tool upgrade jira-data-center-mcp-server
 For development, clone the repository and install locally:
 
 ```bash
-git clone https://github.com/AaronPJaeger/jira-data-center-mcp-server.git
+git clone https://<your-github-host>/<org>/jira-data-center-mcp-server.git
 cd jira-data-center-mcp-server
 uv sync                      # install dependencies into local .venv
 uv tool install --force .    # rebuild the global executable used by MCP clients
@@ -143,7 +143,7 @@ The `preflight` composite tool reports the active profile, server info, and curr
 #### Step 1: Clone the Repository
 
 ```bash
-git clone https://github.com/AaronPJaeger/jira-data-center-mcp-server.git
+git clone https://<your-github-host>/<org>/jira-data-center-mcp-server.git
 cd jira-data-center-mcp-server
 ```
 
