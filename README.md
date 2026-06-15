@@ -197,6 +197,18 @@ python -m jira_data_center_mcp_server
 - `list_components`
 - `list_versions`
 
+### Versions and releases
+
+- `get_version`
+- `get_version_related_issues`
+- `create_version`
+- `update_version`
+- `release_version`
+- `unrelease_version`
+- `archive_version`
+- `unarchive_version`
+- `delete_version`
+
 ### Issue lifecycle and mutation
 
 - `create_issue`
@@ -338,6 +350,7 @@ Destructive or broad actions require explicit confirmation parameters:
 - `delete_issue_property(confirm=True)`
 - `delete_attachment(confirm=True)`
 - `delete_worklog(confirm=True)`
+- `delete_version(confirm=True)`
 - `bulk_update_issues(confirm=True)`
 - `bulk_transition_issues(confirm=True)`
 - `bulk_add_comment(confirm=True)`
