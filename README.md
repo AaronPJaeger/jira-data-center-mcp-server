@@ -1,8 +1,8 @@
 # Jira Data Center v10 MCP Server
 
-Enterprise-grade Model Context Protocol (MCP) server for Jira Data Center v10.
+Task-oriented Model Context Protocol (MCP) server for Jira Data Center v10.
 
-This server exposes Jira search, issue inspection, creation, rich updates, workflow transitions, comments, identity lookup, schema discovery, issue links, attachments, worklogs, Jira Software Agile operations, audit/history, saved filters, issue properties, project roles, groups, security levels, and guarded destructive operations to MCP-compatible clients.
+Exposes consolidated tools for issue management, workflow transitions, and agile operations. Static metadata is available as MCP Resources (`jira://` URIs). Common multi-step workflows have dedicated composite tools that reduce LLM round-trips. Guided workflows are available as MCP Prompts.
 
 ## Installation
 
@@ -121,7 +121,7 @@ You can also bypass profiles and enable exact tool groups:
 JIRA_MCP_ENABLED_GROUPS=READONLY_CORE,METADATA,WORKFLOW_READ,AGILE_READ
 ```
 
-The `get_mcp_profile_status` tool reports the active profile and enabled groups at runtime.
+The `preflight` composite tool reports the active profile, server info, and current user at runtime.
 
 **Getting Your Jira PAT (Personal Access Token):**
 1. Log in to your Jira Data Center instance
@@ -177,36 +177,54 @@ python -m jira_data_center_mcp_server
 
 ## Tool Coverage
 
+### Composite tools (multi-step workflows)
+
+- `preflight` — Session init: server info + current user + profile + link types in one call
+- `create_and_enrich_issue` — Create + enrich custom fields + assign + link in one call
+- `complete_stage` — Transition + attach evidence + add comment in one call
+- `close_issue` — Auto-discover close transition + set resolution + comment
+
 ### Search and inspection
 
 - `search_issues`
-- `get_issue_details`
+- `get_issue` (detail_level: summary/full/raw)
+- `get_issue_editmeta`
 - `validate_jql`
 - `get_issue_changelog`
 - `get_issue_activity`
 
-### Project/schema metadata
+### MCP Resources (static metadata — no tool call needed)
 
-- `list_projects`
-- `get_project_metadata`
-- `get_create_issue_metadata`
-- `list_issue_types`
-- `list_priorities`
-- `list_fields`
+| Resource URI | Description |
+|---|---|
+| `jira://profile` | Active MCP profile and enabled groups |
+| `jira://server-info` | Jira server version and configuration |
+| `jira://me` | Authenticated user identity |
+| `jira://projects` | All visible projects |
+| `jira://priorities` | Priority values |
+| `jira://fields` | All fields including custom fields |
+| `jira://statuses` | Workflow statuses |
+| `jira://resolutions` | Issue resolutions |
+| `jira://link-types` | Issue link types (Blocks, Relates, etc.) |
+| `jira://projects/{key}` | Project metadata |
+| `jira://projects/{key}/issue-types` | Issue types for a project |
+| `jira://projects/{key}/components` | Project components |
+| `jira://projects/{key}/versions` | Project versions/releases |
+| `jira://projects/{key}/create-meta` | Required fields for issue creation |
+
+### Dynamic metadata tools
+
+- `search_users`
+- `get_my_permissions`
 - `get_custom_field_options`
-- `list_components`
-- `list_versions`
+- `list_workflows`
+- `get_version`
+- `get_version_related_issues`
 
 ### Versions and releases
 
-- `get_version`
-- `get_version_related_issues`
 - `create_version`
-- `update_version`
-- `release_version`
-- `unrelease_version`
-- `archive_version`
-- `unarchive_version`
+- `update_version` (with action: release/unrelease/archive/unarchive)
 - `delete_version`
 
 ### Issue lifecycle and mutation
@@ -214,19 +232,13 @@ python -m jira_data_center_mcp_server
 - `create_issue`
 - `create_subtask`
 - `list_subtasks`
-- `update_issue`
-- `update_issue_structured`
-- `update_issue_fields`
+- `update_issue` (unified: named params + fields_json escape hatch)
 - `delete_issue`
 
 ### Workflow
 
 - `get_available_transitions`
-- `transition_issue`
-- `transition_issue_with_fields`
-- `list_statuses`
-- `list_resolutions`
-- `list_workflows`
+- `transition_issue` (with optional fields, comment, resolution)
 
 ### Comments and collaboration
 
@@ -234,23 +246,13 @@ python -m jira_data_center_mcp_server
 - `list_comments`
 - `update_comment`
 - `delete_comment`
-- `assign_issue`
-- `unassign_issue`
 - `list_watchers`
 - `watch_issue`
 - `unwatch_issue`
-- `search_users`
-
-### Permissions and server context
-
-- `get_myself`
-- `get_my_permissions`
-- `get_server_info`
 
 ### Links, remote links, and issue properties
 
 - `list_issue_links`
-- `list_issue_link_types`
 - `create_issue_link`
 - `delete_issue_link`
 - `list_remote_links`
@@ -288,11 +290,8 @@ python -m jira_data_center_mcp_server
 
 ### Filters, roles, groups, security
 
-- `list_filters`
-- `get_filter`
-- `run_filter`
-- `list_project_roles`
-- `get_project_role_actors`
+- `use_filter` (list, get, or run a saved filter)
+- `get_project_roles` (list roles or get actors)
 - `list_groups`
 - `list_security_levels`
 - `set_issue_security_level`
@@ -302,6 +301,13 @@ python -m jira_data_center_mcp_server
 - `bulk_update_issues`
 - `bulk_transition_issues`
 - `bulk_add_comment`
+
+### MCP Prompts (guided workflows)
+
+- `create-and-assign` — Guided issue creation with assignment
+- `close-issue` — Guided issue closure with resolution
+- `triage-issue` — Guided triage (priority, assign, label, sprint)
+- `release-version` — Guided version release
 
 ## Troubleshooting
 
