@@ -1,0 +1,22 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "jira-data-center-mcp-server"
+version = "0.2.0"
+description = "Enterprise-grade MCP server for Jira Data Center v10"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+dependencies = [
+    "mcp>=0.1.0",
+    "jira>=3.8.0",
+    "python-dotenv>=1.0.1",
+]
+
+[project.scripts]
+jira-data-center-mcp-server = "jira_data_center_mcp_server.server:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/jira_data_center_mcp_server"]

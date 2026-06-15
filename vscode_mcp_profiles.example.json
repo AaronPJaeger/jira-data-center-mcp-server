@@ -1,0 +1,64 @@
+{
+  "mcpServers": {
+    "jira-readonly": {
+      "type": "stdio",
+      "command": "/absolute/path/to/jira-data-center-mcp-server/.venv/bin/python",
+      "args": [
+        "/absolute/path/to/jira-data-center-mcp-server/jira_server.py"
+      ],
+      "env": {
+        "JIRA_MCP_PROFILE": "readonly"
+      }
+    },
+    "jira-standard": {
+      "type": "stdio",
+      "command": "/absolute/path/to/jira-data-center-mcp-server/.venv/bin/python",
+      "args": [
+        "/absolute/path/to/jira-data-center-mcp-server/jira_server.py"
+      ],
+      "env": {
+        "JIRA_MCP_PROFILE": "standard"
+      }
+    },
+    "jira-agile": {
+      "type": "stdio",
+      "command": "/absolute/path/to/jira-data-center-mcp-server/.venv/bin/python",
+      "args": [
+        "/absolute/path/to/jira-data-center-mcp-server/jira_server.py"
+      ],
+      "env": {
+        "JIRA_MCP_PROFILE": "agile"
+      }
+    },
+    "jira-admin": {
+      "type": "stdio",
+      "command": "/absolute/path/to/jira-data-center-mcp-server/.venv/bin/python",
+      "args": [
+        "/absolute/path/to/jira-data-center-mcp-server/jira_server.py"
+      ],
+      "env": {
+        "JIRA_MCP_PROFILE": "admin"
+      }
+    },
+    "jira-full": {
+      "type": "stdio",
+      "command": "/absolute/path/to/jira-data-center-mcp-server/.venv/bin/python",
+      "args": [
+        "/absolute/path/to/jira-data-center-mcp-server/jira_server.py"
+      ],
+      "env": {
+        "JIRA_MCP_PROFILE": "full"
+      }
+    },
+    "jira-dangerous": {
+      "type": "stdio",
+      "command": "/absolute/path/to/jira-data-center-mcp-server/.venv/bin/python",
+      "args": [
+        "/absolute/path/to/jira-data-center-mcp-server/jira_server.py"
+      ],
+      "env": {
+        "JIRA_MCP_PROFILE": "dangerous"
+      }
+    }
+  }
+}
