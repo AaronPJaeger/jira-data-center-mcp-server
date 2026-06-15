@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-Single-file Python MCP server (`jira_server.py`, ~1830 lines) exposing 79 tools for Jira Data Center v10 via the Model Context Protocol. Uses `FastMCP` from the `mcp` package and `python-jira` for Jira REST API access.
+Single-file Python MCP server (`jira_server.py`, ~2020 lines) exposing 88 tools for Jira Data Center v10 via the Model Context Protocol. Uses `FastMCP` from the `mcp` package and `python-jira` for Jira REST API access.
 
 - **License**: MIT
 - **Dependencies**: See [requirements.txt](requirements.txt) — `mcp`, `jira`, `python-dotenv`
@@ -25,7 +25,7 @@ Everything lives in [jira_server.py](jira_server.py). Key sections in order:
 1. **Imports, logging, FastMCP init** — logging routes to stderr (stdout reserved for MCP JSON-RPC)
 2. **Profile system** (~lines 35–165) — tool groups, profile definitions, `@profiled_tool` decorator
 3. **Jira connection & utilities** (~lines 170–370) — validation, normalization, REST wrappers, JSON helpers
-4. **Tool functions** (~lines 375–1826) — grouped by domain (search, metadata, mutation, workflow, comments, links, attachments, worklogs, agile, admin, bulk)
+4. **Tool functions** (~lines 375–2020) — grouped by domain (search, metadata, versions/releases, mutation, workflow, comments, links, attachments, worklogs, agile, admin, bulk)
 5. **Entry point** — `mcp.run()` at bottom
 
 ## Key Conventions
