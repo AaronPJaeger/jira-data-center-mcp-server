@@ -48,6 +48,7 @@ ALL_TOOL_GROUPS = {
     "WORKLOG_WRITE",
     "AGILE_READ",
     "AGILE_WRITE",
+    "VERSION_WRITE",
     "ADMIN_READ",
     "ADMIN_WRITE",
     "BULK",
@@ -76,6 +77,7 @@ PROFILE_GROUPS = {
         "PROPERTY_WRITE",
         "ATTACHMENT_WRITE",
         "WORKLOG_WRITE",
+        "VERSION_WRITE",
         "AGILE_READ",
         "ADMIN_READ",
     },
@@ -96,6 +98,7 @@ PROFILE_GROUPS = {
         "READONLY_CORE",
         "METADATA",
         "WORKFLOW_READ",
+        "VERSION_WRITE",
         "AGILE_READ",
         "ADMIN_READ",
         "ADMIN_WRITE",
@@ -113,6 +116,7 @@ PROFILE_GROUPS = {
         "PROPERTY_WRITE",
         "ATTACHMENT_WRITE",
         "WORKLOG_WRITE",
+        "VERSION_WRITE",
         "AGILE_READ",
         "AGILE_WRITE",
         "ADMIN_READ",
@@ -745,6 +749,238 @@ def list_versions(project_key: str) -> str:
         return _json_dumps([_object_to_dict(v) for v in versions])
     except Exception as exc:
         return _error(f"Unable to list versions for {project_key}", exc)
+
+
+@profiled_tool("METADATA")
+def get_version(version_id: str) -> str:
+    """Get details of a specific project version by its ID.
+
+    Use list_versions first to discover version IDs for a project.
+    """
+    if not version_id or not str(version_id).strip():
+        return "Error: version_id is required."
+    try:
+        data = _get(f"/rest/api/2/version/{str(version_id).strip()}")
+        return _json_dumps(data)
+    except Exception as exc:
+        return _error(f"Unable to get version {version_id}", exc)
+
+
+@profiled_tool("METADATA")
+def get_version_related_issues(version_id: str) -> str:
+    """Get counts of issues related to a version (fixed, affected) and unresolved issue count.
+
+    Use list_versions first to discover version IDs for a project.
+    """
+    if not version_id or not str(version_id).strip():
+        return "Error: version_id is required."
+    vid = str(version_id).strip()
+    try:
+        related = _get(f"/rest/api/2/version/{vid}/relatedIssueCounts")
+        unresolved = _get(f"/rest/api/2/version/{vid}/unresolvedIssueCount")
+        return _json_dumps({
+            "version_id": vid,
+            "related_issue_counts": related,
+            "unresolved_issue_count": unresolved,
+        })
+    except Exception as exc:
+        return _error(f"Unable to get related issues for version {version_id}", exc)
+
+
+@profiled_tool("VERSION_WRITE")
+def create_version(
+    project_key: str,
+    name: str,
+    description: Optional[str] = None,
+    start_date: Optional[str] = None,
+    release_date: Optional[str] = None,
+    archived: bool = False,
+    released: bool = False,
+) -> str:
+    """Create a new version/release in a Jira project.
+
+    Args:
+        project_key: The project key (e.g. "PROJ").
+        name: Version name (e.g. "1.2.0").
+        description: Optional description of the version.
+        start_date: Optional start date in YYYY-MM-DD format.
+        release_date: Optional release date in YYYY-MM-DD format.
+        archived: Whether the version is archived. Default False.
+        released: Whether the version is already released. Default False.
+    """
+    if not project_key or not project_key.strip():
+        return "Error: project_key is required."
+    if not name or not name.strip():
+        return "Error: name is required."
+    try:
+        payload: Dict[str, Any] = {
+            "project": project_key.strip().upper(),
+            "name": name.strip(),
+            "archived": archived,
+            "released": released,
+        }
+        if description is not None:
+            payload["description"] = description
+        if start_date is not None:
+            payload["startDate"] = start_date.strip()
+        if release_date is not None:
+            payload["releaseDate"] = release_date.strip()
+        data = _post("/rest/api/2/version", payload=payload)
+        return _json_dumps(data)
+    except Exception as exc:
+        return _error(f"Unable to create version '{name}' in {project_key}", exc)
+
+
+@profiled_tool("VERSION_WRITE")
+def update_version(
+    version_id: str,
+    name: Optional[str] = None,
+    description: Optional[str] = None,
+    start_date: Optional[str] = None,
+    release_date: Optional[str] = None,
+    archived: Optional[bool] = None,
+    released: Optional[bool] = None,
+) -> str:
+    """Update an existing version's attributes.
+
+    Only provided fields are changed; omitted fields remain unchanged.
+    Use list_versions to discover version IDs.
+
+    Args:
+        version_id: The version ID to update.
+        name: New version name.
+        description: New description.
+        start_date: New start date in YYYY-MM-DD format.
+        release_date: New release date in YYYY-MM-DD format.
+        archived: Whether the version is archived.
+        released: Whether the version is released.
+    """
+    if not version_id or not str(version_id).strip():
+        return "Error: version_id is required."
+    payload: Dict[str, Any] = {}
+    if name is not None:
+        payload["name"] = name.strip()
+    if description is not None:
+        payload["description"] = description
+    if start_date is not None:
+        payload["startDate"] = start_date.strip()
+    if release_date is not None:
+        payload["releaseDate"] = release_date.strip()
+    if archived is not None:
+        payload["archived"] = archived
+    if released is not None:
+        payload["released"] = released
+    if not payload:
+        return "Error: At least one field to update must be provided."
+    try:
+        data = _put(f"/rest/api/2/version/{str(version_id).strip()}", payload=payload)
+        return _json_dumps(data)
+    except Exception as exc:
+        return _error(f"Unable to update version {version_id}", exc)
+
+
+@profiled_tool("VERSION_WRITE")
+def release_version(version_id: str, release_date: Optional[str] = None) -> str:
+    """Mark a version as released, optionally setting the release date.
+
+    Args:
+        version_id: The version ID to release.
+        release_date: Release date in YYYY-MM-DD format. Defaults to today if omitted.
+    """
+    if not version_id or not str(version_id).strip():
+        return "Error: version_id is required."
+    try:
+        from datetime import date as _date
+        payload: Dict[str, Any] = {"released": True}
+        if release_date is not None:
+            payload["releaseDate"] = release_date.strip()
+        else:
+            payload["releaseDate"] = _date.today().isoformat()
+        data = _put(f"/rest/api/2/version/{str(version_id).strip()}", payload=payload)
+        return _json_dumps(data)
+    except Exception as exc:
+        return _error(f"Unable to release version {version_id}", exc)
+
+
+@profiled_tool("VERSION_WRITE")
+def unrelease_version(version_id: str) -> str:
+    """Mark a released version as unreleased.
+
+    Args:
+        version_id: The version ID to unrelease.
+    """
+    if not version_id or not str(version_id).strip():
+        return "Error: version_id is required."
+    try:
+        data = _put(f"/rest/api/2/version/{str(version_id).strip()}", payload={"released": False})
+        return _json_dumps(data)
+    except Exception as exc:
+        return _error(f"Unable to unrelease version {version_id}", exc)
+
+
+@profiled_tool("VERSION_WRITE")
+def archive_version(version_id: str) -> str:
+    """Archive a project version.
+
+    Args:
+        version_id: The version ID to archive.
+    """
+    if not version_id or not str(version_id).strip():
+        return "Error: version_id is required."
+    try:
+        data = _put(f"/rest/api/2/version/{str(version_id).strip()}", payload={"archived": True})
+        return _json_dumps(data)
+    except Exception as exc:
+        return _error(f"Unable to archive version {version_id}", exc)
+
+
+@profiled_tool("VERSION_WRITE")
+def unarchive_version(version_id: str) -> str:
+    """Unarchive a project version.
+
+    Args:
+        version_id: The version ID to unarchive.
+    """
+    if not version_id or not str(version_id).strip():
+        return "Error: version_id is required."
+    try:
+        data = _put(f"/rest/api/2/version/{str(version_id).strip()}", payload={"archived": False})
+        return _json_dumps(data)
+    except Exception as exc:
+        return _error(f"Unable to unarchive version {version_id}", exc)
+
+
+@profiled_tool("DESTRUCTIVE")
+def delete_version(
+    version_id: str,
+    move_fix_issues_to: Optional[str] = None,
+    move_affected_issues_to: Optional[str] = None,
+    confirm: bool = False,
+) -> str:
+    """Delete a project version. Requires confirm=True.
+
+    Optionally reassign issues that referenced this version.
+
+    Args:
+        version_id: The version ID to delete.
+        move_fix_issues_to: Version ID to reassign fixVersion issues to.
+        move_affected_issues_to: Version ID to reassign affected-version issues to.
+        confirm: Must be True to proceed. Safety gate.
+    """
+    if not confirm:
+        return "Refused: delete_version requires confirm=True."
+    if not version_id or not str(version_id).strip():
+        return "Error: version_id is required."
+    try:
+        params: Dict[str, str] = {}
+        if move_fix_issues_to is not None:
+            params["moveFixIssuesTo"] = str(move_fix_issues_to).strip()
+        if move_affected_issues_to is not None:
+            params["moveAffectedIssuesTo"] = str(move_affected_issues_to).strip()
+        data = _delete(f"/rest/api/2/version/{str(version_id).strip()}", params=params or None)
+        return _json_dumps({"deleted": True, "version_id": version_id, "detail": data})
+    except Exception as exc:
+        return _error(f"Unable to delete version {version_id}", exc)
 
 
 # ---------------------------------------------------------------------------
