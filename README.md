@@ -40,16 +40,18 @@ For development, clone the repository and install locally:
 ```bash
 git clone https://<your-github-host>/<org>/jira-data-center-mcp-server.git
 cd jira-data-center-mcp-server
-uv sync                      # install dependencies into local .venv
-uv tool install --force .    # rebuild the global executable used by MCP clients
+uv sync                                # install dependencies into local .venv
+uv tool install --force --no-cache .   # rebuild the global executable used by MCP clients
 ```
 
 After making code changes, rebuild and restart the MCP server:
 
 ```bash
-uv tool install --force .
+uv tool install --force --no-cache .
 # Then restart the MCP server from your MCP client (e.g. VS Code MCP panel)
 ```
+
+> **Important:** Always use `--no-cache` when installing from a local checkout. Without it, `uv` may reuse a cached wheel from a previous build and silently skip your code changes.
 
 ### MCP Client Configuration
 

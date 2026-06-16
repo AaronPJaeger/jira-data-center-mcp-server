@@ -40,11 +40,13 @@ MCP clients (VS Code, Claude Desktop) invoke the server as a standalone executab
 
 ```powershell
 # Build and install (or update) the global executable
-uv tool install --force .
+uv tool install --force --no-cache .
 
 # Find the installed exe path (for MCP client config)
 uv tool dir --bin          # typically ~/.local/bin or %USERPROFILE%\.local\bin
 ```
+
+> **Important:** Always use `--no-cache` when installing from a local checkout. Without it, `uv` may reuse a cached wheel from a previous build and silently skip your code changes.
 
 If the exe is locked by a running MCP server process, stop the server from your MCP client first (e.g. VS Code → Command Palette → "MCP: List Servers" → stop), then rerun the install.
 
