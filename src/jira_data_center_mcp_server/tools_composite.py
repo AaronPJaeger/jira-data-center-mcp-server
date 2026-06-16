@@ -1,7 +1,8 @@
 """Composite tools — multi-step workflows as single MCP calls."""
 
+import json
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from .client import (
     JIRA_URL,
@@ -76,8 +77,15 @@ def create_and_enrich_issue(
     """
     Create an issue, enrich it with custom fields, assign it, and link it — all in one call.
 
-    This replaces the common 4-call sequence: create_issue → update_issue (enrich) →
-    assign → create_issue_link. Ideal for release chain ticket creation.
+    DEPRECATED: Prefer the type-specific creation tools for better results:
+      - create_story: Stories with user story format and Dev Notes
+      - create_epic: Epics with Value Statement and PI auto-calculation
+      - create_task: Tasks with objective/steps/verification structure
+      - create_bug: Bugs with reproduction steps and [BUG] prefix
+      - create_initiative: Initiatives with Lean UX problem statement
+
+    This generic tool remains available for release chain workflows and issue
+    types not covered by the type-specific tools.
 
     Args:
         project_key: Project key (e.g. "VALIP").
@@ -169,6 +177,7 @@ def complete_stage(
     transition_name_or_id: str,
     comment: Optional[str] = None,
     attachment_path: Optional[str] = None,
+    attachment_paths_json: Optional[str] = None,
     resolution: Optional[str] = None,
 ) -> str:
     """
@@ -181,7 +190,11 @@ def complete_stage(
         issue_key: Jira issue key.
         transition_name_or_id: Target transition name or ID (e.g. "Done", "In Review").
         comment: Optional comment to add after transitioning.
-        attachment_path: Optional local file path to attach (e.g. evidence screenshot, RA document).
+        attachment_path: Optional single local file path to attach. For multiple files,
+            use attachment_paths_json instead.
+        attachment_paths_json: Optional JSON array of local file paths to attach.
+            Example: '["C:/evidence/pre-impl-1.png","C:/evidence/pre-impl-2.png"]'
+            When provided, attachment_path is ignored.
         resolution: Optional resolution name (e.g. "Done", "Fixed").
     """
     err = _validate_issue_key(issue_key)
@@ -220,21 +233,35 @@ def complete_stage(
         result["steps"].append({"action": "transition", "ok": False, "error": str(exc)})
         return _json_dumps(result)
 
-    # Step 2: Attach file (if provided)
-    if attachment_path:
-        path = Path(attachment_path).resolve()
+    # Step 2: Attach files (if provided)
+    # Build list of paths to attach — prefer attachment_paths_json over attachment_path
+    paths_to_attach: List[str] = []
+    if attachment_paths_json:
+        try:
+            parsed = json.loads(attachment_paths_json)
+            if isinstance(parsed, list):
+                paths_to_attach = [str(p) for p in parsed if p]
+            else:
+                result["steps"].append({"action": "attach", "ok": False, "error": "attachment_paths_json must be a JSON array"})
+        except (json.JSONDecodeError, TypeError) as parse_err:
+            result["steps"].append({"action": "attach", "ok": False, "error": f"Invalid attachment_paths_json: {parse_err}"})
+    elif attachment_path:
+        paths_to_attach = [attachment_path]
+
+    for file_path in paths_to_attach:
+        path = Path(file_path).resolve()
         if not path.exists() or not path.is_file():
-            result["steps"].append({"action": "attach", "ok": False, "error": f"File not found: {attachment_path}"})
+            result["steps"].append({"action": "attach", "ok": False, "error": f"File not found: {file_path}"})
         elif path.name.lower() in SENSITIVE_FILE_NAMES or path.name.lower().startswith(".env."):
             result["steps"].append({"action": "attach", "ok": False, "error": f"Sensitive file refused: {path.name}"})
         elif any(part.lower() in SENSITIVE_DIR_NAMES for part in path.parts):
-            result["steps"].append({"action": "attach", "ok": False, "error": f"Sensitive directory refused: {attachment_path}"})
+            result["steps"].append({"action": "attach", "ok": False, "error": f"Sensitive directory refused: {file_path}"})
         else:
             try:
                 attachment = jira_client.add_attachment(issue=normalized_key, attachment=str(path))
-                result["steps"].append({"action": "attach", "ok": True, "attachment": _object_to_dict(attachment)})
+                result["steps"].append({"action": "attach", "ok": True, "file": path.name, "attachment": _object_to_dict(attachment)})
             except Exception as exc:
-                result["steps"].append({"action": "attach", "ok": False, "error": str(exc)})
+                result["steps"].append({"action": "attach", "ok": False, "file": path.name, "error": str(exc)})
 
     # Step 3: Add comment (if provided)
     if comment:
