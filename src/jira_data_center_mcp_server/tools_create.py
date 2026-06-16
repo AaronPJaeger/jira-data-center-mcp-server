@@ -291,7 +291,6 @@ def create_epic(
     non_functional: Optional[str] = None,
     priority: str = "Medium",
     assignee_username: Optional[str] = None,
-    fix_versions: Optional[str] = None,
     fiscal_year: Optional[int] = None,
     fiscal_quarter: Optional[int] = None,
     target_start_date: Optional[str] = None,
@@ -329,8 +328,6 @@ def create_epic(
         non_functional: Non-functional requirements (newline-separated). Optional.
         priority: Priority name (default "Medium").
         assignee_username: Jira username to assign.
-        fix_versions: Comma-separated version names (e.g. "FY26Q3" or
-            "FY26Q3,VALIP Platform 2.18.0.0"). Auto-calculated if omitted.
         fiscal_year: Full fiscal year (e.g. 2026). Auto-calculated if omitted.
         fiscal_quarter: Fiscal quarter (1-4). Auto-calculated if omitted.
         target_start_date: YYYY-MM-DD override. Auto-calculated if omitted.
@@ -422,17 +419,8 @@ def create_epic(
         target_start_date = target_start_date or dr["start"]
         target_end_date = target_end_date or dr["end"]
 
-    # Build fixVersions list
-    if fix_versions:
-        version_names = [v.strip() for v in fix_versions.split(",") if v.strip()]
-    else:
-        version_names = []
-    if not version_names:
-        version_names.append(_pi_component(fy_short, quarter))
-
-    # Enrichment — no Epic Link for epics
+    # Enrichment — no Epic Link and no fixVersions for epics
     enrich: Dict[str, Any] = {
-        "fixVersions": [{"name": v} for v in version_names],
         "customfield_11704": target_start_date,
         "customfield_11705": target_end_date,
     }
