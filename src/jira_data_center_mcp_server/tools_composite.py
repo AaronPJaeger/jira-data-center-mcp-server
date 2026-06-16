@@ -2,7 +2,7 @@
 
 import json
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 from .client import (
     JIRA_URL,
@@ -69,7 +69,7 @@ def create_and_enrich_issue(
     description: str,
     issue_type: str = "Story",
     priority: Optional[str] = None,
-    fields_json: Optional[str] = None,
+    fields_json: Any = None,
     assignee_username: Optional[str] = None,
     link_to_issue: Optional[str] = None,
     link_type: Optional[str] = None,
@@ -177,7 +177,7 @@ def complete_stage(
     transition_name_or_id: str,
     comment: Optional[str] = None,
     attachment_path: Optional[str] = None,
-    attachment_paths_json: Optional[str] = None,
+    attachment_paths_json: Any = None,
     resolution: Optional[str] = None,
 ) -> str:
     """
@@ -238,7 +238,10 @@ def complete_stage(
     paths_to_attach: List[str] = []
     if attachment_paths_json:
         try:
-            parsed = json.loads(attachment_paths_json)
+            if isinstance(attachment_paths_json, list):
+                parsed = attachment_paths_json
+            else:
+                parsed = json.loads(attachment_paths_json)
             if isinstance(parsed, list):
                 paths_to_attach = [str(p) for p in parsed if p]
             else:

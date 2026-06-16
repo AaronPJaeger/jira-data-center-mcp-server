@@ -7,7 +7,7 @@ enforces them.
 """
 
 from datetime import date as _date
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 from .client import (
     JIRA_URL,
@@ -50,8 +50,8 @@ def _va_fiscal_quarter(d: _date = None) -> dict:
 
 
 def _pi_component(fy_short: int, quarter: int) -> str:
-    """Format the PI component name: FY26Q3."""
-    return f"FY{fy_short}Q{quarter}"
+    """Format the PI component name: FY26 Q3."""
+    return f"FY{fy_short} Q{quarter}"
 
 
 def _quarter_date_range(fy: int, quarter: int) -> dict:
@@ -165,7 +165,7 @@ def create_story(
     priority: str = "Medium",
     dev_notes: Optional[str] = None,
     assignee_username: Optional[str] = None,
-    collaborators_json: Optional[str] = None,
+    collaborators_json: Any = None,
     snow_ticket: Optional[str] = None,
     estimate: Optional[str] = None,
     target_start_date: Optional[str] = None,
@@ -198,8 +198,8 @@ def create_story(
         estimate: Time estimate in Jira format (e.g. "4h", "2d", "1w").
         target_start_date: Target start in YYYY-MM-DD format.
         target_end_date: Target end in YYYY-MM-DD format.
-        fix_versions: Comma-separated version names (e.g. "FY26Q3" or
-            "FY26Q3,VALIP Platform 2.18.0.0"). The PI quarter version is
+        fix_versions: Comma-separated version names (e.g. "FY26 Q3" or
+            "FY26 Q3,VALIP Platform 2.18.0.0"). The PI quarter version is
             auto-calculated and prepended if omitted.
     """
     if not project_key or not project_key.strip():
@@ -250,7 +250,7 @@ def create_story(
     if collaborators_json:
         import json
         try:
-            enrich["customfield_22701"] = json.loads(collaborators_json)
+            enrich["customfield_22701"] = collaborators_json if isinstance(collaborators_json, list) else json.loads(collaborators_json)
         except Exception:
             pass  # Skip invalid collaborators silently
 
@@ -295,7 +295,7 @@ def create_epic(
     fiscal_quarter: Optional[int] = None,
     target_start_date: Optional[str] = None,
     target_end_date: Optional[str] = None,
-    labels_json: Optional[str] = None,
+    labels_json: Any = None,
     pi_objective_component: Optional[str] = None,
 ) -> str:
     """Create a Jira Epic with VALIP conventions.
@@ -334,7 +334,7 @@ def create_epic(
         target_end_date: YYYY-MM-DD override. Auto-calculated if omitted.
         labels_json: JSON array of label strings. Default: ["VALIP-PLATFORM-&-[Technical_Support]"].
         pi_objective_component: Optional PI Objective component name
-            (e.g. "FY26Q3 - OPS Platform Objective").
+            (e.g. "FY26 Q3 - OPS Platform Objective").
     """
     if not project_key or not project_key.strip():
         return "Error: project_key is required."
@@ -438,7 +438,7 @@ def create_epic(
     if labels_json:
         import json
         try:
-            enrich["labels"] = json.loads(labels_json)
+            enrich["labels"] = labels_json if isinstance(labels_json, list) else json.loads(labels_json)
         except Exception:
             enrich["labels"] = ["VALIP-PLATFORM-&-[Technical_Support]"]
     else:
@@ -506,8 +506,8 @@ def create_task(
         estimate: Time estimate in Jira format (e.g. "4h", "2d").
         target_start_date: Target start in YYYY-MM-DD format.
         target_end_date: Target end in YYYY-MM-DD format.
-        fix_versions: Comma-separated version names (e.g. "FY26Q3" or
-            "FY26Q3,VALIP Platform 2.18.0.0"). Auto-calculated if omitted.
+        fix_versions: Comma-separated version names (e.g. "FY26 Q3" or
+            "FY26 Q3,VALIP Platform 2.18.0.0"). Auto-calculated if omitted.
     """
     if not project_key or not project_key.strip():
         return "Error: project_key is required."
@@ -656,8 +656,8 @@ def create_bug(
         estimate: Time estimate in Jira format.
         target_start_date: Target start in YYYY-MM-DD format.
         target_end_date: Target end in YYYY-MM-DD format.
-        fix_versions: Comma-separated version names (e.g. "FY26Q3" or
-            "FY26Q3,VALIP Platform 2.18.0.0"). Auto-calculated if omitted.
+        fix_versions: Comma-separated version names (e.g. "FY26 Q3" or
+            "FY26 Q3,VALIP Platform 2.18.0.0"). Auto-calculated if omitted.
     """
     if not project_key or not project_key.strip():
         return "Error: project_key is required."
@@ -788,7 +788,7 @@ def create_initiative(
     fiscal_quarter: Optional[int] = None,
     target_start_date: Optional[str] = None,
     target_end_date: Optional[str] = None,
-    labels_json: Optional[str] = None,
+    labels_json: Any = None,
     pi_objective_component: Optional[str] = None,
 ) -> str:
     """Create a Jira Initiative with VALIP conventions.
@@ -818,8 +818,8 @@ def create_initiative(
         acceptance_criteria: High-level Given/When/Then for initiative success.
         priority: Priority name (default "High" for initiatives).
         assignee_username: Jira username to assign.
-        fix_versions: Comma-separated version names (e.g. "FY26Q3" or
-            "FY26Q3,VALIP Platform 2.18.0.0"). Auto-calculated if omitted.
+        fix_versions: Comma-separated version names (e.g. "FY26 Q3" or
+            "FY26 Q3,VALIP Platform 2.18.0.0"). Auto-calculated if omitted.
         fiscal_year: Full fiscal year (e.g. 2026). Auto-calculated if omitted.
         fiscal_quarter: Fiscal quarter (1-4). Auto-calculated if omitted.
         target_start_date: YYYY-MM-DD override. Auto-calculated if omitted.
@@ -827,7 +827,7 @@ def create_initiative(
         labels_json: JSON array of label strings.
             Default: ["VALIP-PLATFORM-&-[Technical_Support]"].
         pi_objective_component: Optional PI Objective component name
-            (e.g. "FY26Q4 - OPS Unplanned Platform Objective").
+            (e.g. "FY26 Q4 - OPS Unplanned Platform Objective").
     """
     if not project_key or not project_key.strip():
         return "Error: project_key is required."
@@ -912,7 +912,7 @@ def create_initiative(
     if labels_json:
         import json
         try:
-            enrich["labels"] = json.loads(labels_json)
+            enrich["labels"] = labels_json if isinstance(labels_json, list) else json.loads(labels_json)
         except Exception:
             enrich["labels"] = ["VALIP-PLATFORM-&-[Technical_Support]"]
     else:

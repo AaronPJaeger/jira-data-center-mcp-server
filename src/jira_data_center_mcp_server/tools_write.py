@@ -4,7 +4,7 @@ attachments, worklogs, versions, admin, and bulk operations."""
 import json
 from datetime import date as _date
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 from .client import (
     JIRA_URL,
@@ -127,14 +127,14 @@ def list_subtasks(issue_key: str) -> str:
 @profiled_tool("ISSUE_WRITE")
 def update_issue(
     issue_key: str,
-    fields_json: Optional[str] = None,
+    fields_json: Any = None,
     summary: Optional[str] = None,
     description: Optional[str] = None,
     assignee_username: Optional[str] = None,
     priority: Optional[str] = None,
-    labels_json: Optional[str] = None,
-    components_json: Optional[str] = None,
-    fix_versions_json: Optional[str] = None,
+    labels_json: Any = None,
+    components_json: Any = None,
+    fix_versions_json: Any = None,
 ) -> str:
     """
     Update fields on an existing Jira issue.
@@ -259,7 +259,7 @@ def delete_issue(issue_key: str, confirm: bool = False, delete_subtasks: bool = 
 def transition_issue(
     issue_key: str,
     transition_name_or_id: str,
-    fields_json: Optional[str] = None,
+    fields_json: Any = None,
     comment: Optional[str] = None,
     resolution: Optional[str] = None,
 ) -> str:
@@ -1025,7 +1025,7 @@ def set_issue_security_level(issue_key: str, security_level_id: str) -> str:
 # ---------------------------------------------------------------------------
 
 @profiled_tool("BULK")
-def bulk_update_issues(issue_keys: List[str], fields_json: str, confirm: bool = False) -> str:
+def bulk_update_issues(issue_keys: List[str], fields_json: Any = "", confirm: bool = False) -> str:
     """Bulk update explicit issue keys. Requires confirm=True."""
     if not confirm:
         return "Refused: bulk_update_issues requires confirm=True."

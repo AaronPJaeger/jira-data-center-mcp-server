@@ -5,7 +5,7 @@ import logging
 import os
 import re
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence
+from typing import Any, Dict, List, Optional, Union, Sequence
 
 from dotenv import load_dotenv
 from jira import JIRA
@@ -197,7 +197,7 @@ def _find_transition_id(issue_key: str, transition_name_or_id: str) -> Dict[str,
 # JSON parsing helpers
 # ---------------------------------------------------------------------------
 
-def _parse_json_object(value: Optional[str], field_name: str) -> Dict[str, Any]:
+def _parse_json_object(value: Optional[Union[str, dict]], field_name: str) -> Dict[str, Any]:
     if value is None or value == "":
         return {}
     if isinstance(value, dict):
@@ -211,7 +211,7 @@ def _parse_json_object(value: Optional[str], field_name: str) -> Dict[str, Any]:
     return parsed
 
 
-def _parse_json_array(value: Optional[str], field_name: str) -> List[Any]:
+def _parse_json_array(value: Optional[Union[str, list]], field_name: str) -> List[Any]:
     if value is None or value == "":
         return []
     if isinstance(value, list):
