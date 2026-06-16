@@ -92,6 +92,9 @@ def _create_and_enrich(
         }
         if priority:
             issue_dict["priority"] = {"name": priority}
+        # Jira Data Center requires Epic Name (customfield_10003) for Epics
+        if issue_type.strip().lower() == "epic":
+            issue_dict["customfield_10003"] = summary.strip()
         new_issue = jira_client.create_issue(fields=issue_dict)
         issue_key = new_issue.key
         result["key"] = issue_key
@@ -288,7 +291,6 @@ def create_epic(
     non_functional: Optional[str] = None,
     priority: str = "Medium",
     assignee_username: Optional[str] = None,
-    fix_versions: Optional[str] = None,
     fiscal_year: Optional[int] = None,
     fiscal_quarter: Optional[int] = None,
     target_start_date: Optional[str] = None,
@@ -326,8 +328,6 @@ def create_epic(
         non_functional: Non-functional requirements (newline-separated). Optional.
         priority: Priority name (default "Medium").
         assignee_username: Jira username to assign.
-        fix_versions: Comma-separated version names (e.g. "FY26Q3" or
-            "FY26Q3,VALIP Platform 2.18.0.0"). Auto-calculated if omitted.
         fiscal_year: Full fiscal year (e.g. 2026). Auto-calculated if omitted.
         fiscal_quarter: Fiscal quarter (1-4). Auto-calculated if omitted.
         target_start_date: YYYY-MM-DD override. Auto-calculated if omitted.
@@ -419,26 +419,17 @@ def create_epic(
         target_start_date = target_start_date or dr["start"]
         target_end_date = target_end_date or dr["end"]
 
-    # Build fixVersions list
-    if fix_versions:
-        version_names = [v.strip() for v in fix_versions.split(",") if v.strip()]
-    else:
-        version_names = []
-    if not version_names:
-        version_names.append(_pi_component(fy_short, quarter))
-
-    # Enrichment — no Epic Link for epics
+    # Enrichment — no Epic Link and no fixVersions for epics
     enrich: Dict[str, Any] = {
-        "fixVersions": [{"name": v} for v in version_names],
         "customfield_11704": target_start_date,
         "customfield_11705": target_end_date,
     }
     if acceptance_criteria:
         enrich["customfield_10500"] = acceptance_criteria
 
-    # Components — use first version name (PI quarter) for component
-    pi_version = version_names[0]
-    components: List[Dict[str, str]] = [{"name": pi_version}]
+    # Components — always use the PI quarter label, never the release version
+    pi_component_name = _pi_component(fy_short, quarter)
+    components: List[Dict[str, str]] = [{"name": pi_component_name}]
     if pi_objective_component:
         components.append({"name": pi_objective_component})
     enrich["components"] = components
@@ -910,9 +901,9 @@ def create_initiative(
     if acceptance_criteria:
         enrich["customfield_10500"] = acceptance_criteria
 
-    # Components — use first version name (PI quarter) for component
-    pi_version = version_names[0]
-    components: List[Dict[str, str]] = [{"name": pi_version}]
+    # Components — always use the PI quarter label, never the release version
+    pi_component_name = _pi_component(fy_short, quarter)
+    components: List[Dict[str, str]] = [{"name": pi_component_name}]
     if pi_objective_component:
         components.append({"name": pi_objective_component})
     enrich["components"] = components

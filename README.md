@@ -6,6 +6,15 @@ Exposes consolidated tools for issue management, workflow transitions, and agile
 
 ## Installation
 
+### Prerequisites — install `uv`
+
+| OS | Command |
+|----|--------|
+| Windows | `winget install astral-sh.uv` |
+| Fedora/RHEL | `dnf install uv` |
+| macOS (Homebrew) | `brew install uv` |
+| Any (standalone) | `curl -LsSf https://astral.sh/uv/install.sh \| sh` |
+
 ### Quick Install with `uv` (Recommended)
 
 Install the server with [`uv`](https://docs.astral.sh/uv/):
@@ -31,16 +40,18 @@ For development, clone the repository and install locally:
 ```bash
 git clone https://<your-github-host>/<org>/jira-data-center-mcp-server.git
 cd jira-data-center-mcp-server
-uv sync                      # install dependencies into local .venv
-uv tool install --force .    # rebuild the global executable used by MCP clients
+uv sync                                # install dependencies into local .venv
+uv tool install --force --no-cache .   # rebuild the global executable used by MCP clients
 ```
 
 After making code changes, rebuild and restart the MCP server:
 
 ```bash
-uv tool install --force .
+uv tool install --force --no-cache .
 # Then restart the MCP server from your MCP client (e.g. VS Code MCP panel)
 ```
+
+> **Important:** Always use `--no-cache` when installing from a local checkout. Without it, `uv` may reuse a cached wheel from a previous build and silently skip your code changes.
 
 ### MCP Client Configuration
 
@@ -135,6 +146,8 @@ The `preflight` composite tool reports the active profile, server info, and curr
 <details>
 <summary>Click to expand manual setup steps</summary>
 
+> **Note:** `uv` is strongly recommended over `pip` for significantly faster installs. See the prerequisites table above.
+
 #### Prerequisites
 
 - Python 3.10 or later
@@ -184,6 +197,14 @@ python -m jira_data_center_mcp_server
 - `complete_stage` — Transition + attach evidence + add comment in one call
 - `close_issue` — Auto-discover close transition + set resolution + comment
 
+### Type-specific creation tools
+
+- `create_story` — User story format with Dev Notes separation, Given/When/Then AC
+- `create_epic` — Value Statement description, PI auto-calculation
+- `create_task` — Objective/steps/verification structure, checklist AC
+- `create_bug` — Reproduction steps, [BUG] prefix, High priority default
+- `create_initiative` — Lean UX problem statement, High priority default
+
 ### Search and inspection
 
 - `search_issues`
@@ -225,6 +246,7 @@ python -m jira_data_center_mcp_server
 
 - `create_version`
 - `update_version` (with action: release/unrelease/archive/unarchive)
+- `get_or_create_version`
 - `delete_version`
 
 ### Issue lifecycle and mutation
@@ -233,6 +255,8 @@ python -m jira_data_center_mcp_server
 - `create_subtask`
 - `list_subtasks`
 - `update_issue` (unified: named params + fields_json escape hatch)
+- `assign_issue`
+- `unassign_issue`
 - `delete_issue`
 
 ### Workflow
@@ -305,6 +329,11 @@ python -m jira_data_center_mcp_server
 ### MCP Prompts (guided workflows)
 
 - `create-and-assign` — Guided issue creation with assignment
+- `create-story` — Guided user story creation
+- `create-epic` — Guided epic creation
+- `create-task` — Guided task creation
+- `create-bug` — Guided bug creation
+- `create-initiative` — Guided initiative creation
 - `close-issue` — Guided issue closure with resolution
 - `triage-issue` — Guided triage (priority, assign, label, sprint)
 - `release-version` — Guided version release
