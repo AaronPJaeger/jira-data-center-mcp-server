@@ -92,6 +92,9 @@ def _create_and_enrich(
         }
         if priority:
             issue_dict["priority"] = {"name": priority}
+        # Jira Data Center requires Epic Name (customfield_10003) for Epics
+        if issue_type.strip().lower() == "epic":
+            issue_dict["customfield_10003"] = summary.strip()
         new_issue = jira_client.create_issue(fields=issue_dict)
         issue_key = new_issue.key
         result["key"] = issue_key
@@ -436,9 +439,9 @@ def create_epic(
     if acceptance_criteria:
         enrich["customfield_10500"] = acceptance_criteria
 
-    # Components — use first version name (PI quarter) for component
-    pi_version = version_names[0]
-    components: List[Dict[str, str]] = [{"name": pi_version}]
+    # Components — always use the PI quarter label, never the release version
+    pi_component_name = _pi_component(fy_short, quarter)
+    components: List[Dict[str, str]] = [{"name": pi_component_name}]
     if pi_objective_component:
         components.append({"name": pi_objective_component})
     enrich["components"] = components
@@ -910,9 +913,9 @@ def create_initiative(
     if acceptance_criteria:
         enrich["customfield_10500"] = acceptance_criteria
 
-    # Components — use first version name (PI quarter) for component
-    pi_version = version_names[0]
-    components: List[Dict[str, str]] = [{"name": pi_version}]
+    # Components — always use the PI quarter label, never the release version
+    pi_component_name = _pi_component(fy_short, quarter)
+    components: List[Dict[str, str]] = [{"name": pi_component_name}]
     if pi_objective_component:
         components.append({"name": pi_objective_component})
     enrich["components"] = components

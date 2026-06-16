@@ -34,6 +34,28 @@ uv sync
 
 Runtime requires `JIRA_SERVER_URL` and `JIRA_PAT` env vars (set in `.env`). Never commit secrets.
 
+### Deploy as MCP server executable
+
+MCP clients (VS Code, Claude Desktop) invoke the server as a standalone executable via stdio. After any code change, you **must** rebuild and reinstall the exe — otherwise clients run the stale build.
+
+```powershell
+# Build and install (or update) the global executable
+uv tool install --force .
+
+# Find the installed exe path (for MCP client config)
+uv tool dir --bin          # typically ~/.local/bin or %USERPROFILE%\.local\bin
+```
+
+If the exe is locked by a running MCP server process, stop the server from your MCP client first (e.g. VS Code → Command Palette → "MCP: List Servers" → stop), then rerun the install.
+
+To install from the remote repository without cloning:
+
+```bash
+uv tool install git+https://<your-github-host>/<org>/jira-data-center-mcp-server.git
+```
+
+See [README.md](README.md) for full MCP client configuration examples (VS Code, Claude Desktop).
+
 ## Architecture
 
 The server is split into focused modules under `src/jira_data_center_mcp_server/`:
@@ -141,4 +163,5 @@ npx @modelcontextprotocol/inspector python -m jira_data_center_mcp_server
    e. Wrap Jira calls in try/except, return `_json_dumps()` on success, `_error()` on failure
    f. If destructive, require `confirm=True` parameter
    g. Write a rich tool description with examples — the LLM uses this to decide when to call the tool
-   g. Update the Tool Coverage section in [README.md](README.md)
+   h. Update the Tool Coverage section in [README.md](README.md)
+   i. Rebuild the exe with `uv tool install --force .` and restart the MCP server

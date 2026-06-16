@@ -69,6 +69,9 @@ def create_issue(
         }
         if priority:
             issue_dict["priority"] = {"name": priority}
+        # Jira Data Center requires Epic Name (customfield_10003) for Epics
+        if (issue_type or "").strip().lower() == "epic":
+            issue_dict["customfield_10003"] = summary.strip()
 
         new_issue = jira_client.create_issue(fields=issue_dict)
         return _json_dumps({
