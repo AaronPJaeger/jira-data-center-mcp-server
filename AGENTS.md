@@ -4,19 +4,33 @@
 
 Python MCP server for Jira Data Center v10 via the Model Context Protocol. Uses `FastMCP` from the `mcp` package and `python-jira` for Jira REST API access.
 
-Exposes **~57 tools** (standard profile), **14 MCP Resources**, and **9 MCP Prompts**. Static metadata is served as Resources (`jira://` URIs), common multi-step workflows have composite tools that reduce round-trips, and guided workflows are available as Prompts.
+Exposes **75 tools** (standard profile), **14 MCP Resources**, and **9 MCP Prompts**. Static metadata is served as Resources (`jira://` URIs), common multi-step workflows have composite tools that reduce round-trips, and guided workflows are available as Prompts.
 
 - **License**: MIT
-- **Dependencies**: See [requirements.txt](requirements.txt) — `mcp`, `jira`, `python-dotenv`
+- **Dependencies**: See [pyproject.toml](pyproject.toml) — `mcp`, `jira`, `python-dotenv`
 - **No test suite** — `.pytest_cache/` in `.gitignore` suggests future intent
 
 ## Setup
 
+### Prerequisites — install `uv`
+
+| OS | Command |
+|----|---------|
+| Windows | `winget install astral-sh.uv` |
+| Fedora/RHEL | `dnf install uv` |
+| macOS (Homebrew) | `brew install uv` |
+| Any (standalone) | `curl -LsSf https://astral.sh/uv/install.sh \| sh` |
+
+### Create venv and install dependencies
+
 ```powershell
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
+uv venv
+.\.venv\Scripts\Activate.ps1   # Windows
+# source .venv/bin/activate     # Linux/macOS
+uv sync
 ```
+
+> **Note:** Always use `uv` instead of `pip` for all package operations — it is significantly faster. Use `uv add <pkg>` to add dependencies, `uv sync` to install, and `uv run` to execute scripts.
 
 Runtime requires `JIRA_SERVER_URL` and `JIRA_PAT` env vars (set in `.env`). Never commit secrets.
 
@@ -30,7 +44,7 @@ The server is split into focused modules under `src/jira_data_center_mcp_server/
 | [config.py](src/jira_data_center_mcp_server/config.py) | Profile system, tool gating | `profiled_tool`, `get_profile_status_payload`, `ACTIVE_PROFILE_LABEL` |
 | [client.py](src/jira_data_center_mcp_server/client.py) | Jira connection, REST wrappers, validation/normalization | `jira_client`, `JIRA_URL`, `_get`, `_post`, `_put`, `_delete`, validators |
 | [resources.py](src/jira_data_center_mcp_server/resources.py) | 14 MCP Resources + Resource Templates | `jira://` URI handlers |
-| [prompts.py](src/jira_data_center_mcp_server/prompts.py) | 4 MCP Prompts | Guided workflows |
+| [prompts.py](src/jira_data_center_mcp_server/prompts.py) | 9 MCP Prompts | Guided workflows |
 | [tools_read.py](src/jira_data_center_mcp_server/tools_read.py) | Read-only tools | Search, get_issue, changelog, metadata |
 | [tools_write.py](src/jira_data_center_mcp_server/tools_write.py) | Mutation tools | Issues, comments, links, attachments, worklogs, versions, admin, bulk |
 | [tools_agile.py](src/jira_data_center_mcp_server/tools_agile.py) | Agile tools | Boards, sprints, ranking |
@@ -126,5 +140,5 @@ npx @modelcontextprotocol/inspector python -m jira_data_center_mcp_server
    d. Import utilities from `client.py` (`_validate_issue_key`, `_parse_json_object`, etc.)
    e. Wrap Jira calls in try/except, return `_json_dumps()` on success, `_error()` on failure
    f. If destructive, require `confirm=True` parameter
-   f. Write a rich tool description with examples — the LLM uses this to decide when to call the tool
+   g. Write a rich tool description with examples — the LLM uses this to decide when to call the tool
    g. Update the Tool Coverage section in [README.md](README.md)
