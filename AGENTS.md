@@ -4,7 +4,7 @@
 
 Python MCP server for Jira Data Center v10 via the Model Context Protocol. Uses `FastMCP` from the `mcp` package and `python-jira` for Jira REST API access.
 
-Exposes **~52 tools** (standard profile), **14 MCP Resources**, and **4 MCP Prompts**. Static metadata is served as Resources (`jira://` URIs), common multi-step workflows have composite tools that reduce round-trips, and guided workflows are available as Prompts.
+Exposes **~57 tools** (standard profile), **14 MCP Resources**, and **9 MCP Prompts**. Static metadata is served as Resources (`jira://` URIs), common multi-step workflows have composite tools that reduce round-trips, and guided workflows are available as Prompts.
 
 - **License**: MIT
 - **Dependencies**: See [requirements.txt](requirements.txt) — `mcp`, `jira`, `python-dotenv`
@@ -34,13 +34,14 @@ The server is split into focused modules under `src/jira_data_center_mcp_server/
 | [tools_read.py](src/jira_data_center_mcp_server/tools_read.py) | Read-only tools | Search, get_issue, changelog, metadata |
 | [tools_write.py](src/jira_data_center_mcp_server/tools_write.py) | Mutation tools | Issues, comments, links, attachments, worklogs, versions, admin, bulk |
 | [tools_agile.py](src/jira_data_center_mcp_server/tools_agile.py) | Agile tools | Boards, sprints, ranking |
-| [tools_composite.py](src/jira_data_center_mcp_server/tools_composite.py) | Composite tools | `preflight`, `create_and_enrich_issue`, `complete_stage`, `close_issue` |
+| [tools_composite.py](src/jira_data_center_mcp_server/tools_composite.py) | Composite tools | `preflight`, `create_and_enrich_issue` (deprecated), `complete_stage`, `close_issue` |
+| [tools_create.py](src/jira_data_center_mcp_server/tools_create.py) | Type-specific creation tools | `create_story`, `create_epic`, `create_task`, `create_bug`, `create_initiative` |
 | [server.py](src/jira_data_center_mcp_server/server.py) | Entry point | Imports all modules, defines `main()` |
 
 **Import graph** (no circular dependencies):
 ```
 app.py ← config.py ← tools_*.py
-       ← client.py ← tools_*.py, resources.py, tools_composite.py
+       ← client.py ← tools_*.py, tools_create.py, resources.py, tools_composite.py
        ← resources.py, prompts.py
                       server.py (imports everything)
 ```
@@ -62,9 +63,20 @@ When adding a new tool, always use `@profiled_tool("GROUP")` with the appropriat
 
 Multi-step operations combined into single tools to reduce round-trips:
 - `preflight()` — session init (replaces 4 separate calls)
-- `create_and_enrich_issue()` — create + enrich + assign + link (replaces 4 calls per issue)
+- `create_and_enrich_issue()` — **DEPRECATED** generic create + enrich + assign + link
 - `complete_stage()` — transition + attach + comment (replaces 3-4 calls per stage)
 - `close_issue()` — auto-discover close transition + resolve + comment
+
+### Type-specific creation tools (COMPOSITE group, in tools_create.py)
+
+Issue-type-aware creation tools that encode VALIP conventions:
+- `create_story()` — user story format, Dev Notes separation, Given/When/Then AC
+- `create_epic()` — Value Statement description, PI auto-calculation, no Epic Link
+- `create_task()` — objective/steps/verification structure, checklist AC
+- `create_bug()` — reproduction steps, [BUG] prefix, High priority default
+- `create_initiative()` — Lean UX problem statement, no Epic Link, High priority default
+
+Prefer these over `create_issue` or `create_and_enrich_issue` for standard VALIP work.
 
 ### Destructive operation confirmation
 
@@ -106,7 +118,7 @@ npx @modelcontextprotocol/inspector python -m jira_data_center_mcp_server
 
 1. **Prefer extending an existing tool** over adding a new one. Can the behavior be added as a parameter?
 2. **Prefer Resources for metadata**. If the tool just GETs static data, make it a `@mcp.resource()` in `resources.py`.
-3. **Prefer composite tools for multi-step workflows**. If a workflow always chains the same 3-4 calls, add it to `tools_composite.py`.
+3. **Prefer composite tools for multi-step workflows**. If a workflow always chains the same 3-4 calls, add it to `tools_composite.py`. For issue-type-specific creation, add to `tools_create.py`.
 4. If a new tool is truly needed:
    a. Choose the correct module: `tools_read.py` (read-only), `tools_write.py` (mutations), `tools_agile.py` (agile), `tools_composite.py` (composites)
    b. Choose the correct group from `ALL_TOOL_GROUPS` in `config.py`

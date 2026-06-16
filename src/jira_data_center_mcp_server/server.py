@@ -23,6 +23,7 @@ from . import tools_read  # noqa: F401
 from . import tools_write  # noqa: F401
 from . import tools_agile  # noqa: F401
 from . import tools_composite  # noqa: F401
+from . import tools_create  # noqa: F401
 
 logger = logging.getLogger("jira_mcp_server")
 

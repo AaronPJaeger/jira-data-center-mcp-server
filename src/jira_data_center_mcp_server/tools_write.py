@@ -42,10 +42,16 @@ def create_issue(
     issue_type: str = "Story",
     priority: Optional[str] = None,
 ) -> str:
-    """Create a new Jira issue.
+    """Create a new Jira issue (generic, type-agnostic).
 
-    For creating an issue with enrichment (custom fields, assignment, linking) in
-    a single call, use create_and_enrich_issue instead.
+    Prefer the type-specific tools for better results:
+      - create_story: Stories with user story format and Dev Notes
+      - create_epic: Epics with Value Statement and PI auto-calculation
+      - create_task: Tasks with objective/steps/verification structure
+      - create_bug: Bugs with reproduction steps and [BUG] prefix
+      - create_initiative: Initiatives with Lean UX problem statement
+
+    Use this generic tool only for issue types not covered above.
     """
     if not project_key or not project_key.strip():
         return "Error: project_key is required."
@@ -185,6 +191,45 @@ def update_issue(
         return f"Success: Issue {normalized_key} updated."
     except Exception as exc:
         return _error(f"Unable to update issue {normalized_key}", exc)
+
+
+@profiled_tool("ISSUE_WRITE")
+def assign_issue(issue_key: str, assignee_username: str) -> str:
+    """Assign a Jira issue to a user.
+
+    Args:
+        issue_key: Jira issue key (e.g. PROJ-123).
+        assignee_username: Jira username to assign the issue to.
+    """
+    err = _validate_issue_key(issue_key)
+    if err:
+        return f"Error: {err}"
+    if not assignee_username or not assignee_username.strip():
+        return "Error: assignee_username is required. Use unassign_issue to remove the assignee."
+    try:
+        issue = jira_client.issue(_normalize_issue_key(issue_key))
+        issue.update(fields={"assignee": {"name": assignee_username.strip()}})
+        return f"Success: {_normalize_issue_key(issue_key)} assigned to {assignee_username.strip()}."
+    except Exception as exc:
+        return _error(f"Unable to assign issue {issue_key}", exc)
+
+
+@profiled_tool("ISSUE_WRITE")
+def unassign_issue(issue_key: str) -> str:
+    """Remove the assignee from a Jira issue (set to Unassigned).
+
+    Args:
+        issue_key: Jira issue key (e.g. PROJ-123).
+    """
+    err = _validate_issue_key(issue_key)
+    if err:
+        return f"Error: {err}"
+    try:
+        issue = jira_client.issue(_normalize_issue_key(issue_key))
+        issue.update(fields={"assignee": None})
+        return f"Success: {_normalize_issue_key(issue_key)} unassigned."
+    except Exception as exc:
+        return _error(f"Unable to unassign issue {issue_key}", exc)
 
 
 @profiled_tool("DESTRUCTIVE")
@@ -718,6 +763,66 @@ def create_version(
         return _json_dumps(data)
     except Exception as exc:
         return _error(f"Unable to create version '{name}' in {project_key}", exc)
+
+
+@profiled_tool("VERSION_WRITE")
+def get_or_create_version(
+    project_key: str,
+    name: str,
+    description: Optional[str] = None,
+    start_date: Optional[str] = None,
+    release_date: Optional[str] = None,
+) -> str:
+    """Return an existing version by name, or create it if it does not exist.
+
+    Idempotent — safe to call on workflow resume without risking duplicate versions.
+
+    Args:
+        project_key: Project key (e.g. "VALIP").
+        name: Version name to find or create (e.g. "VALIP Platform 2.18.0.0").
+        description: Description to set if the version is created. Ignored if it already exists.
+        start_date: Start date (YYYY-MM-DD) to set if created. Ignored if it already exists.
+        release_date: Release date (YYYY-MM-DD) to set if created. Ignored if it already exists.
+
+    Returns:
+        JSON with the version data and a "created" boolean indicating whether a new
+        version was created (true) or an existing one was found (false).
+    """
+    if not project_key or not project_key.strip():
+        return "Error: project_key is required."
+    if not name or not name.strip():
+        return "Error: name is required."
+
+    pk = project_key.strip().upper()
+    target_name = name.strip()
+
+    try:
+        # Search existing versions by name
+        versions = _get(f"/rest/api/2/project/{pk}/versions")
+        for v in versions:
+            if v.get("name", "").strip() == target_name:
+                v["created"] = False
+                return _json_dumps(v)
+
+        # Not found — create it
+        payload: Dict[str, Any] = {
+            "project": pk,
+            "name": target_name,
+            "archived": False,
+            "released": False,
+        }
+        if description is not None:
+            payload["description"] = description
+        if start_date is not None:
+            payload["startDate"] = start_date.strip()
+        if release_date is not None:
+            payload["releaseDate"] = release_date.strip()
+
+        data = _post("/rest/api/2/version", payload=payload)
+        data["created"] = True
+        return _json_dumps(data)
+    except Exception as exc:
+        return _error(f"Unable to get or create version '{target_name}' in {pk}", exc)
 
 
 @profiled_tool("VERSION_WRITE")
