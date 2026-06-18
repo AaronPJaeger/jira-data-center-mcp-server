@@ -195,9 +195,9 @@ def create_story(
         collaborators_json: JSON array of collaborator objects.
             Example: '[{"name":"user1"},{"name":"user2"}]'
         snow_ticket: SNOW/RITM/SCTASK ticket number (string, no URL).
-        estimate: Time estimate in Jira format (e.g. "4h", "2d", "1w").
+        estimate: Time estimate in Jira format (e.g. "4h", "2d", "1w"). Defaults to "30m".
         target_start_date: Target start in YYYY-MM-DD format. Defaults to today.
-        target_end_date: Target end in YYYY-MM-DD format.
+        target_end_date: Target end in YYYY-MM-DD format. Defaults to target_start_date.
         fix_versions: Comma-separated version names (e.g. "VALIP Platform 2.18.0.0").
             Only set if provided — no auto-calculation.
     """
@@ -234,6 +234,8 @@ def create_story(
         "customfield_10001": _normalize_issue_key(epic_key),  # Epic Link
         "components": [{"name": pi_component_name}],
         "customfield_11704": target_start_date or _date.today().isoformat(),
+        "customfield_11705": target_end_date or target_start_date or _date.today().isoformat(),
+        "timetracking": {"originalEstimate": estimate or "30m"},
     }
     if version_names:
         enrich["fixVersions"] = [{"name": v} for v in version_names]
@@ -243,10 +245,6 @@ def create_story(
         enrich["customfield_19701"] = dev_notes
     if snow_ticket:
         enrich["customfield_16316"] = snow_ticket
-    if estimate:
-        enrich["timetracking"] = {"originalEstimate": estimate}
-    if target_end_date:
-        enrich["customfield_11705"] = target_end_date
     if collaborators_json:
         import json
         try:
@@ -504,9 +502,9 @@ def create_task(
             Optional.
         assignee_username: Jira username to assign.
         snow_ticket: SNOW/RITM/SCTASK ticket number.
-        estimate: Time estimate in Jira format (e.g. "4h", "2d").
+        estimate: Time estimate in Jira format (e.g. "4h", "2d"). Defaults to "30m".
         target_start_date: Target start in YYYY-MM-DD format. Defaults to today.
-        target_end_date: Target end in YYYY-MM-DD format.
+        target_end_date: Target end in YYYY-MM-DD format. Defaults to target_start_date.
         fix_versions: Comma-separated version names (e.g. "VALIP Platform 2.18.0.0").
             Only set if provided — no auto-calculation.
         collaborators_json: JSON array of collaborator objects.
@@ -583,6 +581,8 @@ def create_task(
         "customfield_10001": _normalize_issue_key(epic_key),
         "components": [{"name": pi_component_name}],
         "customfield_11704": target_start_date or _date.today().isoformat(),
+        "customfield_11705": target_end_date or target_start_date or _date.today().isoformat(),
+        "timetracking": {"originalEstimate": estimate or "30m"},
     }
     if version_names:
         enrich["fixVersions"] = [{"name": v} for v in version_names]
@@ -590,10 +590,6 @@ def create_task(
         enrich["customfield_10500"] = acceptance_criteria
     if snow_ticket:
         enrich["customfield_16316"] = snow_ticket
-    if estimate:
-        enrich["timetracking"] = {"originalEstimate": estimate}
-    if target_end_date:
-        enrich["customfield_11705"] = target_end_date
     if collaborators_json:
         import json
         try:
@@ -665,9 +661,9 @@ def create_bug(
         acceptance_criteria: Given/When/Then criteria for fix verification. Optional.
         assignee_username: Jira username to assign.
         snow_ticket: SNOW/RITM/SCTASK ticket number. Bugs often originate from SNOW.
-        estimate: Time estimate in Jira format.
+        estimate: Time estimate in Jira format. Defaults to "30m".
         target_start_date: Target start in YYYY-MM-DD format. Defaults to today.
-        target_end_date: Target end in YYYY-MM-DD format.
+        target_end_date: Target end in YYYY-MM-DD format. Defaults to target_start_date.
         fix_versions: Comma-separated version names (e.g. "VALIP Platform 2.18.0.0").
             Only set if provided — no auto-calculation.
         collaborators_json: JSON array of collaborator objects.
@@ -753,6 +749,8 @@ def create_bug(
         "customfield_10001": _normalize_issue_key(epic_key),
         "components": [{"name": pi_component_name}],
         "customfield_11704": target_start_date or _date.today().isoformat(),
+        "customfield_11705": target_end_date or target_start_date or _date.today().isoformat(),
+        "timetracking": {"originalEstimate": estimate or "30m"},
     }
     if version_names:
         enrich["fixVersions"] = [{"name": v} for v in version_names]
@@ -760,10 +758,6 @@ def create_bug(
         enrich["customfield_10500"] = acceptance_criteria
     if snow_ticket:
         enrich["customfield_16316"] = snow_ticket
-    if estimate:
-        enrich["timetracking"] = {"originalEstimate": estimate}
-    if target_end_date:
-        enrich["customfield_11705"] = target_end_date
     if collaborators_json:
         import json
         try:

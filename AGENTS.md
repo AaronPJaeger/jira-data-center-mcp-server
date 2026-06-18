@@ -72,7 +72,7 @@ The server is split into focused modules under `src/jira_data_center_mcp_server/
 | [tools_read.py](src/jira_data_center_mcp_server/tools_read.py) | Read-only tools | Search, get_issue, changelog, metadata |
 | [tools_write.py](src/jira_data_center_mcp_server/tools_write.py) | Mutation tools | Issues, comments, links, attachments, worklogs, versions, admin, bulk |
 | [tools_agile.py](src/jira_data_center_mcp_server/tools_agile.py) | Agile tools | Boards, sprints, ranking |
-| [tools_composite.py](src/jira_data_center_mcp_server/tools_composite.py) | Composite tools | `preflight`, `create_and_enrich_issue` (deprecated), `complete_stage`, `close_issue` |
+| [tools_composite.py](src/jira_data_center_mcp_server/tools_composite.py) | Composite tools | `preflight`, `complete_stage`, `close_issue` |
 | [tools_create.py](src/jira_data_center_mcp_server/tools_create.py) | Type-specific creation tools | `create_story`, `create_epic`, `create_task`, `create_bug`, `create_initiative` |
 | [server.py](src/jira_data_center_mcp_server/server.py) | Entry point | Imports all modules, defines `main()` |
 
@@ -101,7 +101,6 @@ When adding a new tool, always use `@profiled_tool("GROUP")` with the appropriat
 
 Multi-step operations combined into single tools to reduce round-trips:
 - `preflight()` — session init (replaces 4 separate calls)
-- `create_and_enrich_issue()` — **DEPRECATED** generic create + enrich + assign + link
 - `complete_stage()` — transition + attach + comment (replaces 3-4 calls per stage)
 - `close_issue()` — auto-discover close transition + resolve + comment
 
@@ -114,7 +113,14 @@ Issue-type-aware creation tools that encode VALIP conventions:
 - `create_bug()` — reproduction steps, [BUG] prefix, High priority default
 - `create_initiative()` — Lean UX problem statement, no Epic Link, High priority default
 
-Prefer these over `create_issue` or `create_and_enrich_issue` for standard VALIP work.
+These tools enforce field defaults so tickets are always complete:
+- `target_start_date` defaults to today
+- `target_end_date` defaults to `target_start_date` (stories/tasks/bugs) or quarter end (epics/initiatives)
+- `estimate` defaults to `"30m"` (stories/tasks/bugs)
+- PI component is always auto-calculated from the current fiscal quarter
+
+Prefer these over `create_issue` + `update_issue` for standard VALIP work. Use the generic
+`create_issue` (in tools_write.py) for edge-case issue types not covered above.
 
 ### Destructive operation confirmation
 

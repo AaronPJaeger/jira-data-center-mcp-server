@@ -5,7 +5,6 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
 from .client import (
-    JIRA_URL,
     SENSITIVE_DIR_NAMES,
     SENSITIVE_FILE_NAMES,
     _error,
@@ -14,7 +13,6 @@ from .client import (
     _json_dumps,
     _normalize_issue_key,
     _object_to_dict,
-    _parse_json_object,
     _post,
     _validate_issue_key,
     jira_client,
@@ -58,115 +56,6 @@ def preflight() -> str:
             result["link_types"] = _get("/rest/api/2/issueLinkType")
     except Exception as exc:
         result["link_types"] = {"error": str(exc)}
-
-    return _json_dumps(result)
-
-
-@profiled_tool("COMPOSITE")
-def create_and_enrich_issue(
-    project_key: str,
-    summary: str,
-    description: str,
-    issue_type: str = "Story",
-    priority: Optional[str] = None,
-    fields_json: Any = None,
-    assignee_username: Optional[str] = None,
-    link_to_issue: Optional[str] = None,
-    link_type: Optional[str] = None,
-) -> str:
-    """
-    Create an issue, enrich it with custom fields, assign it, and link it — all in one call.
-
-    DEPRECATED: Prefer the type-specific creation tools for better results:
-      - create_story: Stories with user story format and Dev Notes
-      - create_epic: Epics with Value Statement and PI auto-calculation
-      - create_task: Tasks with objective/steps/verification structure
-      - create_bug: Bugs with reproduction steps and [BUG] prefix
-      - create_initiative: Initiatives with Lean UX problem statement
-
-    This generic tool remains available for release chain workflows and issue
-    types not covered by the type-specific tools.
-
-    Args:
-        project_key: Project key (e.g. "VALIP").
-        summary: Issue summary.
-        description: Issue description.
-        issue_type: Issue type name (default "Story").
-        priority: Priority name (e.g. "Medium", "High").
-        fields_json: JSON object string of additional fields to set after creation.
-            Example: '{"customfield_10001":"VALIP-100","components":[{"name":"FY26 Q3"}]}'
-        assignee_username: Jira username to assign the issue to.
-        link_to_issue: Issue key to link to (e.g. "VALIP-5000").
-        link_type: Link type name (e.g. "Blocks"). Required if link_to_issue is provided.
-            The new issue becomes the outward issue (e.g. "new issue blocks link_to_issue").
-    """
-    if not project_key or not project_key.strip():
-        return "Error: project_key is required."
-    if not summary or not summary.strip():
-        return "Error: summary is required."
-    if not description or not description.strip():
-        return "Error: description is required."
-    if link_to_issue and not link_type:
-        return "Error: link_type is required when link_to_issue is provided."
-
-    result: Dict[str, Any] = {"steps": []}
-
-    # Step 1: Create
-    try:
-        issue_dict: Dict[str, Any] = {
-            "project": {"key": project_key.strip().upper()},
-            "summary": summary.strip(),
-            "description": description,
-            "issuetype": {"name": issue_type or "Story"},
-        }
-        if priority:
-            issue_dict["priority"] = {"name": priority}
-        new_issue = jira_client.create_issue(fields=issue_dict)
-        issue_key = new_issue.key
-        result["key"] = issue_key
-        result["url"] = f"{JIRA_URL}/browse/{issue_key}"
-        result["steps"].append({"action": "create", "ok": True})
-    except Exception as exc:
-        return _error("Failed to create issue", exc)
-
-    # Step 2: Enrich with custom fields
-    if fields_json:
-        try:
-            fields = _parse_json_object(fields_json, "fields_json")
-            if fields:
-                issue = jira_client.issue(issue_key)
-                issue.update(fields=fields)
-                result["steps"].append({"action": "enrich", "ok": True, "fields_set": list(fields.keys())})
-        except Exception as exc:
-            result["steps"].append({"action": "enrich", "ok": False, "error": str(exc)})
-
-    # Step 3: Assign
-    if assignee_username:
-        try:
-            issue = jira_client.issue(issue_key)
-            issue.update(fields={"assignee": {"name": assignee_username}})
-            result["steps"].append({"action": "assign", "ok": True, "assignee": assignee_username})
-        except Exception as exc:
-            result["steps"].append({"action": "assign", "ok": False, "error": str(exc)})
-
-    # Step 4: Link
-    if link_to_issue:
-        link_err = _validate_issue_key(link_to_issue)
-        if link_err:
-            result["steps"].append({"action": "link", "ok": False, "error": link_err})
-        else:
-            try:
-                jira_client.create_issue_link(
-                    type=link_type,
-                    inwardIssue=_normalize_issue_key(link_to_issue),
-                    outwardIssue=issue_key,
-                )
-                result["steps"].append({
-                    "action": "link", "ok": True,
-                    "link": f"{issue_key} {link_type} {_normalize_issue_key(link_to_issue)}",
-                })
-            except Exception as exc:
-                result["steps"].append({"action": "link", "ok": False, "error": str(exc)})
 
     return _json_dumps(result)
 

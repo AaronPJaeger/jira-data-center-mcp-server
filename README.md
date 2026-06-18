@@ -193,7 +193,6 @@ python -m jira_data_center_mcp_server
 ### Composite tools (multi-step workflows)
 
 - `preflight` — Session init: server info + current user + profile + link types in one call
-- `create_and_enrich_issue` — Create + enrich custom fields + assign + link in one call
 - `complete_stage` — Transition + attach evidence + add comment in one call
 - `close_issue` — Auto-discover close transition + set resolution + comment
 
