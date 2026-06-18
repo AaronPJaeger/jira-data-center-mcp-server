@@ -50,8 +50,8 @@ def _va_fiscal_quarter(d: _date = None) -> dict:
 
 
 def _pi_component(fy_short: int, quarter: int) -> str:
-    """Format the PI component name: FY26 Q3."""
-    return f"FY{fy_short} Q{quarter}"
+    """Format the PI component name: FY26Q3 (no space)."""
+    return f"FY{fy_short}Q{quarter}"
 
 
 def _quarter_date_range(fy: int, quarter: int) -> dict:
@@ -196,11 +196,10 @@ def create_story(
             Example: '[{"name":"user1"},{"name":"user2"}]'
         snow_ticket: SNOW/RITM/SCTASK ticket number (string, no URL).
         estimate: Time estimate in Jira format (e.g. "4h", "2d", "1w").
-        target_start_date: Target start in YYYY-MM-DD format.
+        target_start_date: Target start in YYYY-MM-DD format. Defaults to today.
         target_end_date: Target end in YYYY-MM-DD format.
-        fix_versions: Comma-separated version names (e.g. "FY26 Q3" or
-            "FY26 Q3,VALIP Platform 2.18.0.0"). The PI quarter version is
-            auto-calculated and prepended if omitted.
+        fix_versions: Comma-separated version names (e.g. "VALIP Platform 2.18.0.0").
+            Only set if provided — no auto-calculation.
     """
     if not project_key or not project_key.strip():
         return "Error: project_key is required."
@@ -220,21 +219,24 @@ def create_story(
     # Build user story description
     description = f"*As a* {role},\n*I want* {goal},\n*So that* {benefit}."
 
-    # Build fixVersions list from comma-separated string
+    # Build fixVersions list from comma-separated string (no auto-calc)
     if fix_versions:
         version_names = [v.strip() for v in fix_versions.split(",") if v.strip()]
     else:
         version_names = []
-    # Auto-add PI quarter if no version was provided
-    if not version_names:
-        fq = _va_fiscal_quarter()
-        version_names.append(_pi_component(fq["fy_short"], fq["quarter"]))
+
+    # PI component — always auto-calculated
+    fq = _va_fiscal_quarter()
+    pi_component_name = _pi_component(fq["fy_short"], fq["quarter"])
 
     # Build enrichment fields
     enrich: Dict[str, Any] = {
         "customfield_10001": _normalize_issue_key(epic_key),  # Epic Link
-        "fixVersions": [{"name": v} for v in version_names],
+        "components": [{"name": pi_component_name}],
+        "customfield_11704": target_start_date or _date.today().isoformat(),
     }
+    if version_names:
+        enrich["fixVersions"] = [{"name": v} for v in version_names]
     if acceptance_criteria:
         enrich["customfield_10500"] = acceptance_criteria
     if dev_notes:
@@ -243,8 +245,6 @@ def create_story(
         enrich["customfield_16316"] = snow_ticket
     if estimate:
         enrich["timetracking"] = {"originalEstimate": estimate}
-    if target_start_date:
-        enrich["customfield_11704"] = target_start_date
     if target_end_date:
         enrich["customfield_11705"] = target_end_date
     if collaborators_json:
@@ -479,6 +479,7 @@ def create_task(
     target_start_date: Optional[str] = None,
     target_end_date: Optional[str] = None,
     fix_versions: Optional[str] = None,
+    collaborators_json: Any = None,
 ) -> str:
     """Create a Jira Task with VALIP conventions.
 
@@ -504,10 +505,12 @@ def create_task(
         assignee_username: Jira username to assign.
         snow_ticket: SNOW/RITM/SCTASK ticket number.
         estimate: Time estimate in Jira format (e.g. "4h", "2d").
-        target_start_date: Target start in YYYY-MM-DD format.
+        target_start_date: Target start in YYYY-MM-DD format. Defaults to today.
         target_end_date: Target end in YYYY-MM-DD format.
-        fix_versions: Comma-separated version names (e.g. "FY26 Q3" or
-            "FY26 Q3,VALIP Platform 2.18.0.0"). Auto-calculated if omitted.
+        fix_versions: Comma-separated version names (e.g. "VALIP Platform 2.18.0.0").
+            Only set if provided — no auto-calculation.
+        collaborators_json: JSON array of collaborator objects.
+            Example: '[{"name":"user1"},{"name":"user2"}]'
     """
     if not project_key or not project_key.strip():
         return "Error: project_key is required."
@@ -565,30 +568,38 @@ def create_task(
 
     description = "\n".join(desc_parts)
 
-    # Build fixVersions list
+    # Build fixVersions list (no auto-calc)
     if fix_versions:
         version_names = [v.strip() for v in fix_versions.split(",") if v.strip()]
     else:
         version_names = []
-    if not version_names:
-        fq = _va_fiscal_quarter()
-        version_names.append(_pi_component(fq["fy_short"], fq["quarter"]))
+
+    # PI component — always auto-calculated
+    fq = _va_fiscal_quarter()
+    pi_component_name = _pi_component(fq["fy_short"], fq["quarter"])
 
     # Enrichment
     enrich: Dict[str, Any] = {
         "customfield_10001": _normalize_issue_key(epic_key),
-        "fixVersions": [{"name": v} for v in version_names],
+        "components": [{"name": pi_component_name}],
+        "customfield_11704": target_start_date or _date.today().isoformat(),
     }
+    if version_names:
+        enrich["fixVersions"] = [{"name": v} for v in version_names]
     if acceptance_criteria:
         enrich["customfield_10500"] = acceptance_criteria
     if snow_ticket:
         enrich["customfield_16316"] = snow_ticket
     if estimate:
         enrich["timetracking"] = {"originalEstimate": estimate}
-    if target_start_date:
-        enrich["customfield_11704"] = target_start_date
     if target_end_date:
         enrich["customfield_11705"] = target_end_date
+    if collaborators_json:
+        import json
+        try:
+            enrich["customfield_22701"] = collaborators_json if isinstance(collaborators_json, list) else json.loads(collaborators_json)
+        except Exception:
+            pass
 
     return _create_and_enrich(
         project_key=project_key,
@@ -626,6 +637,7 @@ def create_bug(
     target_start_date: Optional[str] = None,
     target_end_date: Optional[str] = None,
     fix_versions: Optional[str] = None,
+    collaborators_json: Any = None,
 ) -> str:
     """Create a Jira Bug with VALIP conventions.
 
@@ -654,10 +666,12 @@ def create_bug(
         assignee_username: Jira username to assign.
         snow_ticket: SNOW/RITM/SCTASK ticket number. Bugs often originate from SNOW.
         estimate: Time estimate in Jira format.
-        target_start_date: Target start in YYYY-MM-DD format.
+        target_start_date: Target start in YYYY-MM-DD format. Defaults to today.
         target_end_date: Target end in YYYY-MM-DD format.
-        fix_versions: Comma-separated version names (e.g. "FY26 Q3" or
-            "FY26 Q3,VALIP Platform 2.18.0.0"). Auto-calculated if omitted.
+        fix_versions: Comma-separated version names (e.g. "VALIP Platform 2.18.0.0").
+            Only set if provided — no auto-calculation.
+        collaborators_json: JSON array of collaborator objects.
+            Example: '[{"name":"user1"},{"name":"user2"}]'
     """
     if not project_key or not project_key.strip():
         return "Error: project_key is required."
@@ -724,30 +738,38 @@ def create_bug(
 
     description = "\n".join(desc_parts)
 
-    # Build fixVersions list
+    # Build fixVersions list (no auto-calc)
     if fix_versions:
         version_names = [v.strip() for v in fix_versions.split(",") if v.strip()]
     else:
         version_names = []
-    if not version_names:
-        fq = _va_fiscal_quarter()
-        version_names.append(_pi_component(fq["fy_short"], fq["quarter"]))
+
+    # PI component — always auto-calculated
+    fq = _va_fiscal_quarter()
+    pi_component_name = _pi_component(fq["fy_short"], fq["quarter"])
 
     # Enrichment
     enrich: Dict[str, Any] = {
         "customfield_10001": _normalize_issue_key(epic_key),
-        "fixVersions": [{"name": v} for v in version_names],
+        "components": [{"name": pi_component_name}],
+        "customfield_11704": target_start_date or _date.today().isoformat(),
     }
+    if version_names:
+        enrich["fixVersions"] = [{"name": v} for v in version_names]
     if acceptance_criteria:
         enrich["customfield_10500"] = acceptance_criteria
     if snow_ticket:
         enrich["customfield_16316"] = snow_ticket
     if estimate:
         enrich["timetracking"] = {"originalEstimate": estimate}
-    if target_start_date:
-        enrich["customfield_11704"] = target_start_date
     if target_end_date:
         enrich["customfield_11705"] = target_end_date
+    if collaborators_json:
+        import json
+        try:
+            enrich["customfield_22701"] = collaborators_json if isinstance(collaborators_json, list) else json.loads(collaborators_json)
+        except Exception:
+            pass
 
     return _create_and_enrich(
         project_key=project_key,
@@ -818,8 +840,8 @@ def create_initiative(
         acceptance_criteria: High-level Given/When/Then for initiative success.
         priority: Priority name (default "High" for initiatives).
         assignee_username: Jira username to assign.
-        fix_versions: Comma-separated version names (e.g. "FY26 Q3" or
-            "FY26 Q3,VALIP Platform 2.18.0.0"). Auto-calculated if omitted.
+        fix_versions: Comma-separated version names (e.g. "VALIP Platform 2.18.0.0").
+            Only set if provided — no auto-calculation.
         fiscal_year: Full fiscal year (e.g. 2026). Auto-calculated if omitted.
         fiscal_quarter: Fiscal quarter (1-4). Auto-calculated if omitted.
         target_start_date: YYYY-MM-DD override. Auto-calculated if omitted.
@@ -884,20 +906,19 @@ def create_initiative(
         target_start_date = target_start_date or dr["start"]
         target_end_date = target_end_date or dr["end"]
 
-    # Build fixVersions list
+    # Build fixVersions list (no auto-calc)
     if fix_versions:
         version_names = [v.strip() for v in fix_versions.split(",") if v.strip()]
     else:
         version_names = []
-    if not version_names:
-        version_names.append(_pi_component(fy_short, quarter))
 
     # Enrichment — no Epic Link for initiatives
     enrich: Dict[str, Any] = {
-        "fixVersions": [{"name": v} for v in version_names],
         "customfield_11704": target_start_date,
         "customfield_11705": target_end_date,
     }
+    if version_names:
+        enrich["fixVersions"] = [{"name": v} for v in version_names]
     if acceptance_criteria:
         enrich["customfield_10500"] = acceptance_criteria
 
